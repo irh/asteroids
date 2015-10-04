@@ -7,6 +7,7 @@ import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
 import Point exposing (asTuple)
 import Ship exposing (Ship)
+import Shot exposing (Shot)
 import Text
 import Window
 
@@ -30,9 +31,10 @@ view (w, h) game =
       |> outlined borderLineStyle
       |> move (0, 0)
     ship = renderShip game.ship factor
+    shots = List.concatMap (\shot -> renderShot shot factor) game.shots
   in
     collage (floor width) (floor height)
-      (List.concat [[background], ship, [border]])
+      (List.concat [[background], ship, shots, [border]])
     |> container w h middle
     |> color backgroundColor
 
@@ -40,6 +42,17 @@ view (w, h) game =
 scaleTuple : (Float, Float) -> Float -> (Float, Float)
 scaleTuple (x, y) factor =
   (x * factor, y * factor)
+
+
+shipWidth = 0.6 / 2
+shipHeight = 1.0 / 2
+crossBarX = shipWidth * 2.0 / 3.0
+crossBarY = -shipHeight + shipHeight / 3.0
+flameX = crossBarX * 0.75
+flameOffset = shipHeight / 4.0
+flameY = crossBarY - flameOffset
+flameY2 = -shipHeight - flameOffset
+shotRadius = shipHeight * Shot.shotShipRatio
 
 
 renderShip : Ship -> Float -> List Form
@@ -60,19 +73,23 @@ renderShip ship factor =
       [ shipTransform shipPath ]
 
 
+renderShot : Shot -> Float -> List Form
+renderShot shot factor =
+  let
+    shotTransform = (\path ->
+      scalePath path (Ship.shipSize * factor)
+      |> traced shipLineStyle
+      |> move (scaleTuple (asTuple shot.position) factor)
+      )
+  in
+    [ shotTransform (segment (-shotRadius, 0) (shotRadius, 0))
+    , shotTransform (segment (0, -shotRadius) (0, shotRadius))
+    ]
+
+
 scalePath : Path -> Float -> Path
 scalePath path factor =
   List.map (\(x, y) -> (x * factor, y * factor)) path
-
-
-shipWidth = 0.6 / 2
-shipHeight = 1.0 / 2
-crossBarX = shipWidth * 2.0 / 3.0
-crossBarY = -shipHeight + shipHeight / 3.0
-flameX = crossBarX * 0.75
-flameOffset = shipHeight / 4.0
-flameY = crossBarY - flameOffset
-flameY2 = -shipHeight - flameOffset
 
 
 shipPath : Path
@@ -92,6 +109,16 @@ thrustPath =
   , (flameX, flameY)
   , (0, flameY2)
   , (-flameX, flameY)
+  ]
+
+
+shotPath : Path
+shotPath =
+  [ (-shotRadius, 0)
+  , (0, shotRadius)
+  , (shotRadius, 0)
+  , (0, -shotRadius)
+  , (-shotRadius, 0)
   ]
 
 

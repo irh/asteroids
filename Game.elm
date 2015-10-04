@@ -7,10 +7,12 @@ module Game
   ) where
 
 import Constants
+import Data.Vec2 exposing (..)
 import Debug
 import KeyboardHelpers
 import Random exposing(Seed)
 import Ship exposing (..)
+import Shot exposing (..)
 import Trampoline
 
 
@@ -34,6 +36,7 @@ type alias Model =
   { mode : Mode
   , arrows : KeyboardHelpers.Arrows
   , ship : Ship
+  , shots : List Shot
   , score : Int
   , seed : Seed
   }
@@ -44,6 +47,7 @@ defaultGame =
   { mode = Play
   , arrows = KeyboardHelpers.defaultArrows
   , ship = defaultShip
+  , shots = []
   , score = 0
   , seed = Random.initialSeed 0
   }
@@ -68,6 +72,7 @@ updateGame input game =
     Arrows arrows -> { game | arrows <- arrows }
     Wasd wasd -> { game | arrows <- wasd }
     Tick _ -> tickGame game
+    Space down -> if down then addShot game else game
     _ -> game
 
 
@@ -93,8 +98,22 @@ tickPlay : Model -> Model
 tickPlay game =
   let
     ship' = moveShip game.ship game.arrows
+    shots' = List.filterMap Shot.tickShot game.shots
   in
     { game
     | ship <- ship'
+    , shots <- shots'
+    }
+
+
+addShot : Model -> Model
+addShot game =
+  let
+    shotOffset = Ship.shipSize / 2 + Shot.shotSize / 2
+    shotPosition = rotVec game.ship.angle { x = 0.0, y = shotOffset }
+      |> addVec game.ship.position
+  in
+    { game
+    | shots <- (newShot shotPosition game.ship.angle) :: game.shots
     }
 
