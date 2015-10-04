@@ -1,5 +1,6 @@
 module View (view) where
 
+import Asteroid exposing (Asteroid)
 import Color exposing (Color, rgb)
 import Constants
 import Game
@@ -15,6 +16,7 @@ import Window
 backgroundColor = rgb 0 0 0
 borderColor = rgb 255 255 255
 shipColor = rgb 255 255 255
+asteroidColor = rgb 255 255 255
 
 
 view : (Int, Int) -> Game.Model -> Element
@@ -32,9 +34,11 @@ view (w, h) game =
       |> move (0, 0)
     ship = renderShip game.ship factor
     shots = List.concatMap (\shot -> renderShot shot factor) game.shots
+    asteroids =
+      List.map (\asteroid -> renderAsteroid asteroid factor) game.asteroids
   in
     collage (floor width) (floor height)
-      (List.concat [[background], ship, shots, [border]])
+      (List.concat [[background], ship, shots, asteroids, [border]])
     |> container w h middle
     |> color backgroundColor
 
@@ -87,6 +91,19 @@ renderShot shot factor =
     ]
 
 
+renderAsteroid : Asteroid -> Float -> Form
+renderAsteroid asteroid factor =
+  let
+    size = factor * case asteroid.size of
+      Asteroid.Big -> Constants.asteroidSizeBig
+      Asteroid.Medium -> Constants.asteroidSizeMedium
+      Asteroid.Small -> Constants.asteroidSizeSmall
+  in
+    circle size
+    |> outlined asteroidLineStyle
+    |> move (scaleTuple (asTuple asteroid.position) factor)
+
+
 scalePath : Path -> Float -> Path
 scalePath path factor =
   List.map (\(x, y) -> (x * factor, y * factor)) path
@@ -127,6 +144,13 @@ shipLineStyle =
   { defaultLine
   | color <- shipColor
   , join <- Clipped
+  }
+
+
+asteroidLineStyle : LineStyle
+asteroidLineStyle =
+  { defaultLine
+  | color <- asteroidColor
   }
 
 

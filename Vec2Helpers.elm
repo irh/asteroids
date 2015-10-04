@@ -14,6 +14,22 @@ randomVec2 seed min max =
     ({x = x, y = y}, seed1)
 
 
+randomVec2X : Seed -> Float -> Float -> Float -> (Vec2, Seed)
+randomVec2X seed y min max =
+  let
+    (x, seed') = randomFloat min max seed
+  in
+    ({x = x, y = y}, seed')
+
+
+randomVec2Y : Seed -> Float -> Float -> Float -> (Vec2, Seed)
+randomVec2Y seed x min max =
+  let
+    (y, seed') = randomFloat min max seed
+  in
+    ({x = x, y = y}, seed')
+
+
 wrapVec2 : (Vec2, Vec2) -> Vec2 -> Vec2
 wrapVec2 (min, max) input =
   { x = wrapFloat input.x min.x max.x
@@ -33,3 +49,8 @@ wrapFloat input min max =
 
 asTuple : Vec2 -> (Float, Float)
 asTuple point = (point.x, point.y)
+
+
+circlesOverlap : (Vec2, Float) -> (Vec2, Float) -> Bool
+circlesOverlap (posA, radiusA) (posB, radiusB) =
+  (distance posA posB) <= (radiusA + radiusB)
