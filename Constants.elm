@@ -54,10 +54,10 @@ asteroidSpeedSmall : Float
 asteroidSpeedSmall = 0.003
 
 asteroidSizeBig : Float
-asteroidSizeBig = 0.06
+asteroidSizeBig = 0.04
 
 asteroidSizeMedium : Float
-asteroidSizeMedium = 0.04
+asteroidSizeMedium = 0.02
 
 asteroidSizeSmall : Float
-asteroidSizeSmall = 0.02
+asteroidSizeSmall = 0.01

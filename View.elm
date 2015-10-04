@@ -1,6 +1,6 @@
 module View (view) where
 
-import Asteroid exposing (Asteroid)
+import Asteroid exposing (Asteroid, Kind)
 import Color exposing (Color, rgb)
 import Constants
 import Game
@@ -99,9 +99,10 @@ renderAsteroid asteroid factor =
       Asteroid.Medium -> Constants.asteroidSizeMedium
       Asteroid.Small -> Constants.asteroidSizeSmall
   in
-    circle size
+    scalePath (asteroidPath asteroid) size
     |> outlined asteroidLineStyle
     |> move (scaleTuple (asTuple asteroid.position) factor)
+    |> rotate asteroid.angle
 
 
 scalePath : Path -> Float -> Path
@@ -136,6 +137,70 @@ shotPath =
   , (shotRadius, 0)
   , (0, -shotRadius)
   , (-shotRadius, 0)
+  ]
+
+
+asteroidPath : Asteroid -> Path
+asteroidPath asteroid  =
+  case asteroid.kind of
+    Asteroid.A -> asteroidPathA
+    Asteroid.B -> asteroidPathB
+    Asteroid.C -> asteroidPathC
+
+
+asteroidPathA : Path
+asteroidPathA =
+  [ (-1.0, 0.5)
+  , (-0.5, 1.0)
+  , (0.0, 0.7)
+  , (0.5, 1.0)
+  , (1.0, 0.5)
+  , (0.8, 0.0)
+  , (1.0, -0.5)
+  , (0.30, -1.0)
+  , (-0.5, -1.0)
+  , (-1.0, -0.6)
+  ]
+
+
+asteroidPathB : Path
+asteroidPathB =
+  [ (-1.0, 0.5)
+  , (-0.2, 0.5)
+  , (-0.5, 1.0)
+  , (0.2, 1.0)
+  , (1.0, 0.5)
+  , (1.0, 0.3)
+  , (0.4, 0.0)
+  , (1.0, -0.5)
+  , (0.4, -1.0)
+  , (0.2, -0.7)
+  , (-0.5, -1.0)
+  , (-1.0, -0.3)
+  ]
+
+
+asteroidPathC : Path
+asteroidPathC =
+  [ (-1.0, 0.8)
+  , (-0.4, 1.0)
+  , (0.2, 0.8)
+  , (0.6, 1.0)
+  , (0.7, 1.0)
+  , (0.9, 0.8)
+  , (1.0, 0.1)
+  , (0.9, -0.25)
+  , (1.0, -0.4)
+  , (0.9, -0.9)
+  , (0.5, -1.0)
+  , (0.2, -1.0)
+  , (0.0, -0.8)
+  , (-0.333, -1.0)
+  , (-0.7, -1.0)
+  , (-0.95, -0.4)
+  , (-1.0, -0.333)
+  , (-0.8, 0.1)
+  , (-1.0, 0.333)
   ]
 
 

@@ -1,4 +1,12 @@
-module Asteroid where
+module Asteroid
+  ( Asteroid
+  , Size (..)
+  , Kind (..)
+  , newAsteroid
+  , tickAsteroid
+  , destroyAsteroid
+  , asteroidSize
+  ) where
 
 import Constants
 import Data.Vec2 exposing (..)
@@ -13,10 +21,29 @@ type Size
   | Medium
   | Small
 
+
+type Kind
+  = A
+  | B
+  | C
+
+
 type alias Asteroid =
   { size : Size
   , position : Vec2
   , momentum : Vec2
+  , angle : Float
+  , kind : Kind
+  }
+
+
+defaultAsteroid : Asteroid
+defaultAsteroid =
+  { size = Big
+  , position = origin
+  , momentum = origin
+  , angle = 0
+  , kind = A
   }
 
 
@@ -30,14 +57,49 @@ newAsteroid seed =
          | side == 1 -> randomVec2X seed' boundsMin.y boundsMin.x boundsMax.x
          | side == 2 -> randomVec2Y seed' boundsMax.x boundsMin.y boundsMax.y
          | otherwise -> randomVec2X seed' boundsMax.y boundsMin.x boundsMax.x
-    (momentum, seed''') = newMomentum Big seed''
-    asteroid' =
-      { size = Big
-      , position = position
-      , momentum = momentum
+    asteroid =
+      { defaultAsteroid
+      | position <- position
       }
   in
-    (asteroid', seed''')
+    (asteroid, seed'')
+    |> randomizeNewAsteroidProperties
+
+
+randomizeNewAsteroidProperties : (Asteroid, Seed) -> (Asteroid, Seed)
+randomizeNewAsteroidProperties input =
+  input
+  |> randomKind
+  |> randomAngle
+  |> randomMomentum
+
+
+randomKind : (Asteroid, Seed) -> (Asteroid, Seed)
+randomKind (asteroid, seed) =
+  let
+    (kindInt, seed') = randomInt 0 3 seed
+    kind =
+      if | kindInt == 0 -> A
+         | kindInt == 1 -> B
+         | otherwise -> C
+  in
+     ({asteroid | kind <- kind}, seed')
+
+
+randomAngle : (Asteroid, Seed) -> (Asteroid, Seed)
+randomAngle (asteroid, seed) =
+  let
+    (angle, seed') = randomFloat 0 (2 * pi) seed
+  in
+    ({asteroid | angle <- angle}, seed')
+
+
+randomMomentum : (Asteroid, Seed) -> (Asteroid, Seed)
+randomMomentum (asteroid, seed) =
+  let
+    (momentum, seed') = newMomentum asteroid.size seed
+  in
+    ({asteroid | momentum <- momentum}, seed')
 
 
 tickAsteroid : Asteroid -> Asteroid
@@ -69,11 +131,11 @@ splitAsteroid : Asteroid -> Size -> Seed -> (Asteroid, Asteroid, Seed)
 splitAsteroid asteroid size seed =
   let
     newAsteroid = { asteroid | size <- size }
-    (momentumA, seed') = newMomentum size seed
-    (momentumB, seed'') = newMomentum size seed'
+    (a, seed') = (newAsteroid, seed) |> randomizeNewAsteroidProperties
+    (b, seed'') = (newAsteroid, seed') |> randomizeNewAsteroidProperties
   in
-    ( { newAsteroid | momentum <- momentumA } |> tickAsteroid
-    , { newAsteroid | momentum <- momentumB } |> tickAsteroid
+    ( a |> tickAsteroid
+    , b |> tickAsteroid
     , seed''
     )
 

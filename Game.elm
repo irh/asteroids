@@ -77,7 +77,7 @@ newGame game =
 newLevel : Model -> Model
 newLevel game =
   let
-    asteroidCount = Constants.startAsteroidCount + game.level
+    asteroidCount = Constants.startAsteroidCount + game.level * 2
     (asteroids', seed') =
       Random.generate
         (Random.list asteroidCount (Random.customGenerator Asteroid.newAsteroid))
