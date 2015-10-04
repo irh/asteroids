@@ -52,13 +52,13 @@ flameX = crossBarX * 0.75
 flameOffset = shipHeight / 4.0
 flameY = crossBarY - flameOffset
 flameY2 = -shipHeight - flameOffset
-shotRadius = shipHeight * Shot.shotShipRatio
+shotRadius = shipHeight * Constants.shotShipRatio
 
 
 renderShip : Ship -> Float -> List Form
 renderShip ship factor =
   let
-    shipSize = (Ship.shipSize * factor)
+    shipSize = (Constants.shipSize * factor)
     shipPosition = (scaleTuple (asTuple ship.position) factor)
     shipTransform = (\path ->
       scalePath path shipSize
@@ -77,7 +77,7 @@ renderShot : Shot -> Float -> List Form
 renderShot shot factor =
   let
     shotTransform = (\path ->
-      scalePath path (Ship.shipSize * factor)
+      scalePath path (Constants.shipSize * factor)
       |> traced shipLineStyle
       |> move (scaleTuple (asTuple shot.position) factor)
       )

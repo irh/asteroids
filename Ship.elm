@@ -1,7 +1,6 @@
 module Ship
   ( Ship
   , defaultShip
-  , shipSize
   , moveShip
   ) where
 
@@ -10,16 +9,6 @@ import Debug
 import KeyboardHelpers
 import Data.Vec2 exposing (..)
 import Vec2Helpers exposing (wrapVec2)
-
-shipSize = 0.03
-
-turningSpeed = 0.1
-
-thrust : Vec2
-thrust = { x = 0, y = 0.00015 }
-
-spaceFriction = 0.985
-maxMomentum = 0.0125
 
 
 type alias Ship =
@@ -43,14 +32,14 @@ moveShip : Ship -> KeyboardHelpers.Arrows -> Ship
 moveShip ship arrows =
   let
     angle' =
-      if | arrows.x > 0 -> ship.angle - turningSpeed
-         | arrows.x < 0 -> ship.angle + turningSpeed
+      if | arrows.x > 0 -> ship.angle - Constants.turningSpeed
+         | arrows.x < 0 -> ship.angle + Constants.turningSpeed
          | otherwise -> ship.angle
     thrust' = arrows.y > 0
     momentum' =
       if | thrust' -> applyThrust ship.momentum angle'
          | otherwise -> ship.momentum
-      |> scaleVec spaceFriction
+      |> scaleVec Constants.spaceFriction
     position' =
       addVec ship.position momentum'
       |> wrapVec2 Constants.gameBounds
@@ -66,11 +55,11 @@ moveShip ship arrows =
 applyThrust : Vec2 -> Float -> Vec2
 applyThrust momentum angle =
   let
-    momentum' = addVec momentum (rotVec angle thrust)
+    momentum' = addVec momentum (rotVec angle Constants.thrust)
     magnitude' = magnitude momentum'
   in
-    if magnitude' > maxMomentum then
-      scaleVec (maxMomentum / magnitude') momentum'
+    if magnitude' > Constants.maxMomentum then
+      scaleVec (Constants.maxMomentum / magnitude') momentum'
     else
       momentum'
 

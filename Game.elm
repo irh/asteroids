@@ -11,7 +11,7 @@ import Data.Vec2 exposing (..)
 import Debug
 import KeyboardHelpers
 import Random exposing(Seed)
-import Ship exposing (..)
+import Ship exposing (Ship)
 import Shot exposing (..)
 import Trampoline
 
@@ -46,7 +46,7 @@ defaultGame : Model
 defaultGame =
   { mode = Play
   , arrows = KeyboardHelpers.defaultArrows
-  , ship = defaultShip
+  , ship = Ship.defaultShip
   , shots = []
   , score = 0
   , seed = Random.initialSeed 0
@@ -97,7 +97,7 @@ tickGame game =
 tickPlay : Model -> Model
 tickPlay game =
   let
-    ship' = moveShip game.ship game.arrows
+    ship' = Ship.moveShip game.ship game.arrows
     shots' = List.filterMap Shot.tickShot game.shots
   in
     { game
@@ -109,7 +109,7 @@ tickPlay game =
 addShot : Model -> Model
 addShot game =
   let
-    shotOffset = Ship.shipSize / 2 + Shot.shotSize / 2
+    shotOffset = Constants.shipSize / 2 + Constants.shotSize / 2
     shotPosition = rotVec game.ship.angle { x = 0.0, y = shotOffset }
       |> addVec game.ship.position
   in
