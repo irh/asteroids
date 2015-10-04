@@ -14,6 +14,9 @@ gameBounds = ({x = -gameWidth / 2, y = -gameHeight / 2}, {x = gameWidth / 2, y =
 tickFps : Int
 tickFps = 60
 
+startAsteroidCount : Int
+startAsteroidCount = 5
+
 shipSize : Float
 shipSize = 0.03
 

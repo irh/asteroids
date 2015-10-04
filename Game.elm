@@ -41,6 +41,7 @@ type alias Model =
   , shots : List Shot
   , asteroids : List Asteroid
   , score : Int
+  , level : Int
   , seed : Seed
   }
 
@@ -53,6 +54,7 @@ defaultGame =
   , shots = []
   , asteroids = []
   , score = 0
+  , level = 0
   , seed = Random.initialSeed 0
   }
 
@@ -75,14 +77,16 @@ newGame game =
 newLevel : Model -> Model
 newLevel game =
   let
+    asteroidCount = Constants.startAsteroidCount + game.level
     (asteroids', seed') =
       Random.generate
-        (Random.list 10 (Random.customGenerator Asteroid.newAsteroid))
+        (Random.list asteroidCount (Random.customGenerator Asteroid.newAsteroid))
         game.seed
   in
     { game
-    | asteroids <- asteroids'
+    | asteroids <- List.map Asteroid.tickAsteroid asteroids'
     , seed <- seed'
+    , level <- game.level + 1
     }
 
 
@@ -119,6 +123,7 @@ tickPlay game =
   game
   |> moveGameItems
   |> shotCollisions
+  |> checkForNewLevel
 
 
 moveGameItems : Model -> Model
@@ -152,6 +157,13 @@ shotCollisions game =
       shotCollision
       { game | shots <- [] }
       game.shots
+
+
+checkForNewLevel : Model -> Model
+checkForNewLevel game =
+  case game.asteroids of
+    [] -> newLevel game
+    _ -> game
 
 
 shotVsAsteroids : Shot -> List Asteroid -> Seed -> (Maybe Shot, List Asteroid, Seed)
