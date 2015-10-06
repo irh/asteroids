@@ -3,6 +3,7 @@ module View (view) where
 import Asteroid exposing (Asteroid, Kind)
 import Color exposing (Color, rgb)
 import Constants
+import Explosion exposing (Explosion)
 import Game
 import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
@@ -36,9 +37,11 @@ view (w, h) game =
     shots = List.concatMap (\shot -> renderShot shot factor) game.shots
     asteroids =
       List.map (\asteroid -> renderAsteroid asteroid factor) game.asteroids
+    explosions =
+      List.map (\explosion -> renderExplosion explosion factor) game.explosions
   in
     collage (floor width) (floor height)
-      (List.concat [[background], ship, shots, asteroids, [border]])
+      (List.concat [[background], ship, shots, asteroids, explosions, [border]])
     |> container w h middle
     |> color backgroundColor
 
@@ -103,6 +106,36 @@ renderAsteroid asteroid factor =
     |> outlined asteroidLineStyle
     |> move (scaleTuple (asTuple asteroid.position) factor)
     |> rotate asteroid.angle
+
+
+renderExplosion : Explosion -> Float -> Form
+renderExplosion explosion factor =
+  let
+    progress = (toFloat explosion.tickCount) / (toFloat Constants.explosionLifetime)
+    size = factor * progress * Constants.explosionSize
+    debrisSize = factor * Constants.debrisSize
+    renderDebris position =
+      square debrisSize
+      |> outlined asteroidLineStyle
+      |> move (scaleTuple position (debrisSize * size))
+    debris = List.map renderDebris
+      [ (0.8, 0.3)
+      , (0.1, 0.3)
+      , (0.5, 0.6)
+      , (0.5, -0.2)
+      , (0.2, -0.4)
+      , (0.6, -0.9)
+      , (-1.0, -0.3)
+      , (-0.8, -0.3)
+      , (-0.2, -0.6)
+      , (-0.5, 0.6)
+      , (-0.9, 0.7)
+      , (-0.4, 0.3)
+      ]
+  in
+    group debris
+    |> move (scaleTuple (asTuple explosion.position) factor)
+    |> rotate explosion.angle
 
 
 scalePath : Path -> Float -> Path

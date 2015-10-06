@@ -61,3 +61,15 @@ asteroidSizeMedium = 0.02
 
 asteroidSizeSmall : Float
 asteroidSizeSmall = 0.01
+
+explosionLifetime : Int
+explosionLifetime = 20
+
+explosionSpeed : Float
+explosionSpeed = 0.001
+
+explosionSize : Float
+explosionSize = 0.021
+
+debrisSize : Float
+debrisSize = explosionSize / 10

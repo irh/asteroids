@@ -10,6 +10,7 @@ import Asteroid exposing (..)
 import Constants
 import Data.Vec2 exposing (..)
 import Debug
+import Explosion exposing (..)
 import KeyboardHelpers
 import Random exposing(Seed)
 import Ship exposing (Ship)
@@ -40,6 +41,7 @@ type alias Model =
   , ship : Ship
   , shots : List Shot
   , asteroids : List Asteroid
+  , explosions : List Explosion
   , score : Int
   , level : Int
   , seed : Seed
@@ -53,6 +55,7 @@ defaultGame =
   , ship = Ship.defaultShip
   , shots = []
   , asteroids = []
+  , explosions = []
   , score = 0
   , level = 0
   , seed = Random.initialSeed 0
@@ -123,6 +126,7 @@ tickPlay game =
   game
   |> moveGameItems
   |> shotCollisions
+  |> tickExplosions
   |> checkForNewLevel
 
 
@@ -135,30 +139,6 @@ moveGameItems game =
   }
 
 
-shotCollisions : Model -> Model
-shotCollisions game =
-  let
-    shotCollision shot game' =
-      let
-        (shot', asteroids', seed') = shotVsAsteroids shot game'.asteroids game'.seed
-      in
-        case shot' of
-          Just shot'' ->
-            { game'
-            | shots <- shot'' :: game'.shots
-            }
-          Nothing ->
-            { game'
-            | asteroids <- asteroids'
-            , seed <- seed'
-            }
-  in
-    List.foldr
-      shotCollision
-      { game | shots <- [] }
-      game.shots
-
-
 checkForNewLevel : Model -> Model
 checkForNewLevel game =
   case game.asteroids of
@@ -166,36 +146,64 @@ checkForNewLevel game =
     _ -> game
 
 
-shotVsAsteroids : Shot -> List Asteroid -> Seed -> (Maybe Shot, List Asteroid, Seed)
-shotVsAsteroids shot asteroids seed =
+shotCollisions : Model -> Model
+shotCollisions game =
   let
-    shotVsAsteroids' (_, asteroidsToCheck, asteroidsResult, seed') =
+    shotCollision shot game' =
+      let
+        (shot', game'') = shotVsAsteroids shot game'
+      in
+        case shot' of
+          Just shot'' ->
+            { game''
+            | shots <- shot'' :: game'.shots
+            }
+          Nothing -> game''
+  in
+    List.foldr
+      shotCollision
+      { game | shots <- [] }
+      game.shots
+
+
+shotVsAsteroids : Shot -> Model -> (Maybe Shot, Model)
+shotVsAsteroids shot game =
+  let
+    shotVsAsteroids' (_, asteroidsToCheck, game') =
       case asteroidsToCheck of
         asteroid :: tail ->
           if shotAsteroidCollisionTest shot asteroid then
             let
-              destruction = destroyAsteroid asteroid seed'
-              asteroids' = List.append asteroidsResult tail
+              destruction = destroyAsteroid asteroid game'.seed
+              asteroids' = List.append game'.asteroids tail
             in
               case destruction of
-                Just (a, b, seed'') ->
-                  Trampoline.Done
-                    (True, [], a :: b :: asteroids', seed'')
+                Just (a, b, seed') ->
+                  let game'' =
+                    { game' | asteroids <- a :: b :: asteroids', seed <- seed' }
+                      |> addExplosion asteroid.position
+                  in
+                    Trampoline.Done (True, [], game'')
                 Nothing ->
-                  Trampoline.Done
-                    (True, [], asteroids', seed')
+                  let game'' =
+                    { game' | asteroids <- asteroids' }
+                      |> addExplosion asteroid.position
+                  in
+                    Trampoline.Done (True, [], game'')
           else
             Trampoline.Continue
-              (\_ -> shotVsAsteroids' (False, tail, asteroid :: asteroidsResult, seed'))
-        [] -> Trampoline.Done (False, [], asteroidsResult, seed')
+              (\_ -> shotVsAsteroids'
+                (False, tail, { game' | asteroids <- asteroid :: game'.asteroids }))
+        [] -> Trampoline.Done (False, [], game')
 
-    (collision, _, asteroids', seed') =
-      Trampoline.trampoline (shotVsAsteroids' (False, asteroids, [], seed))
+    (collision, _, game') =
+      Trampoline.trampoline
+        (shotVsAsteroids' (False, game.asteroids, { game | asteroids <- [] }))
   in
     if collision then
-      (Nothing, asteroids', seed')
+      (Nothing, game')
     else
-      (Just shot, asteroids', seed')
+      (Just shot, game')
 
 
 shotAsteroidCollisionTest : Shot -> Asteroid -> Bool
@@ -215,3 +223,20 @@ addShot game =
     | shots <- (newShot shotPosition game.ship.angle) :: game.shots
     }
 
+
+addExplosion : Vec2 -> Model -> Model
+addExplosion position game =
+  let
+    (explosion, seed) = newExplosion position game.seed
+  in
+    { game
+    | explosions <- explosion :: game.explosions
+    , seed <- seed
+    }
+
+
+tickExplosions : Model -> Model
+tickExplosions game =
+  { game
+  | explosions <- List.filterMap tickExplosion game.explosions
+  }
