@@ -13,7 +13,7 @@ import Debug
 import Explosion exposing (..)
 import KeyboardHelpers
 import Random exposing(Seed)
-import Ship exposing (Ship)
+import Ship exposing (..)
 import Shot exposing (..)
 import Trampoline
 import Vec2Helpers exposing (..)
@@ -126,8 +126,10 @@ tickPlay game =
   game
   |> moveGameItems
   |> shotCollisions
+  |> shipCollisions
   |> tickExplosions
   |> checkForNewLevel
+  |> tickShipState
 
 
 moveGameItems : Model -> Model
@@ -172,7 +174,7 @@ shotVsAsteroids shot game =
     shotVsAsteroids' (_, asteroidsToCheck, game') =
       case asteroidsToCheck of
         asteroid :: tail ->
-          if shotAsteroidCollisionTest shot asteroid then
+          if shotVsAsteroid shot asteroid then
             let
               destruction = destroyAsteroid asteroid game'.seed
               asteroids' = List.append game'.asteroids tail
@@ -206,22 +208,51 @@ shotVsAsteroids shot game =
       (Just shot, game')
 
 
-shotAsteroidCollisionTest : Shot -> Asteroid -> Bool
-shotAsteroidCollisionTest shot asteroid =
-  circlesOverlap
-    (shot.position, Constants.shotSize) (asteroid.position, (asteroidSize asteroid))
+asteroidCollisionTest : (Vec2, Float) -> Asteroid -> Bool
+asteroidCollisionTest test asteroid =
+  circlesOverlap test (asteroid.position, (asteroidSize asteroid))
+
+
+shotVsAsteroid : Shot -> Asteroid -> Bool
+shotVsAsteroid shot asteroid =
+  asteroidCollisionTest (shot.position, Constants.shotSize) asteroid
+
+
+shipVsAsteroid : Ship -> Asteroid -> Bool
+shipVsAsteroid ship asteroid =
+  asteroidCollisionTest (ship.position, Constants.shipSizeForCollisions) asteroid
+
+
+shipCollisions : Model -> Model
+shipCollisions game =
+  case game.ship.status of
+    Alive ->
+      let
+        collision =
+          List.any (\asteroid -> shipVsAsteroid game.ship asteroid) game.asteroids
+      in
+        if collision then
+          { game
+          | ship <- killShip game.ship
+          } |> addExplosion game.ship.position
+        else
+          game
+    _ -> game
 
 
 addShot : Model -> Model
 addShot game =
-  let
-    shotOffset = Constants.shipSize / 2 + Constants.shotSize / 2
-    shotPosition = rotVec game.ship.angle { x = 0.0, y = shotOffset }
-      |> addVec game.ship.position
-  in
-    { game
-    | shots <- (newShot shotPosition game.ship.angle) :: game.shots
-    }
+  case game.ship.status of
+    Ship.Dead _ -> game
+    _ ->
+      let
+        shotOffset = Constants.shipSize / 2 + Constants.shotSize / 2
+        shotPosition = rotVec game.ship.angle { x = 0.0, y = shotOffset }
+          |> addVec game.ship.position
+      in
+        { game
+        | shots <- (newShot shotPosition game.ship.angle) :: game.shots
+        }
 
 
 addExplosion : Vec2 -> Model -> Model
@@ -240,3 +271,18 @@ tickExplosions game =
   { game
   | explosions <- List.filterMap tickExplosion game.explosions
   }
+
+
+tickShipState : Model -> Model
+tickShipState game =
+  case game.ship.status of
+    Ship.Dead _ ->
+      let
+        ship' = tickDeadShip game.ship
+      in
+        case ship' of
+          Just ship ->
+            { game | ship <- ship }
+          Nothing ->
+            { game | ship <- defaultShip }
+    _ -> game

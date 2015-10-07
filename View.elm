@@ -3,6 +3,7 @@ module View (view) where
 import Asteroid exposing (Asteroid, Kind)
 import Color exposing (Color, rgb)
 import Constants
+import Data.Vec2 exposing (..)
 import Explosion exposing (Explosion)
 import Game
 import Graphics.Collage exposing (..)
@@ -64,9 +65,16 @@ shotRadius = shipHeight * Constants.shotShipRatio
 
 renderShip : Ship -> Float -> List Form
 renderShip ship factor =
+  case ship.status of
+    Ship.Alive -> renderLiveShip ship factor
+    Ship.Dead _ -> renderShipDebris ship factor
+
+
+renderLiveShip : Ship -> Float -> List Form
+renderLiveShip ship factor =
   let
-    shipSize = (Constants.shipSize * factor)
     shipPosition = (scaleTuple (asTuple ship.position) factor)
+    shipSize = (Constants.shipSize * factor)
     shipTransform = (\path ->
       scalePath path shipSize
       |> traced shipLineStyle
@@ -78,6 +86,35 @@ renderShip ship factor =
       [ shipTransform shipPath, shipTransform thrustPath ]
     else
       [ shipTransform shipPath ]
+
+
+renderShipDebris : Ship -> Float -> List Form
+renderShipDebris ship factor =
+  case ship.status of
+    Ship.Dead tickCount ->
+      let
+        progress = (toFloat tickCount) / (toFloat Constants.deadShipTime) + 0.5
+        shipSize = Constants.shipSize * factor
+        debrisSize = progress * Constants.shipDebrisSize * factor
+        renderDebris (lineSize, angle, moveAngle, yOffset) =
+          segment
+            (scaleTuple (0, -0.5) (lineSize * shipSize))
+            (scaleTuple (0, 0.5) (lineSize * shipSize))
+          |> traced shipLineStyle
+          |> rotate angle
+          |> move (0, yOffset * shipSize)
+          |> move (asTuple (rotVec moveAngle { x = 0, y = debrisSize }))
+        debris = List.map renderDebris
+          [ (1.0, pi / 8, -pi / 6, -0.25)
+          , (1.0, -pi / 8, pi / 6, -0.25)
+          , (0.5, pi / 2, pi, 0)
+          ]
+      in
+        [ group debris
+        |> move (scaleTuple (asTuple ship.position) factor)
+        |> rotate ship.angle
+        ]
+    _ -> []
 
 
 renderShot : Shot -> Float -> List Form

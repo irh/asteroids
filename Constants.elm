@@ -20,6 +20,12 @@ startAsteroidCount = 5
 shipSize : Float
 shipSize = 0.03
 
+shipDebrisSize : Float
+shipDebrisSize = 0.02
+
+shipSizeForCollisions : Float
+shipSizeForCollisions = shipSize * 0.4
+
 turningSpeed : Float
 turningSpeed = 0.1
 
@@ -31,6 +37,12 @@ spaceFriction = 0.988
 
 maxMomentum : Float
 maxMomentum = 0.0125
+
+deadShipTime : Int
+deadShipTime = 120
+
+deadShipMomentumChange : Float
+deadShipMomentumChange = 0.4
 
 shotShipRatio : Float
 shotShipRatio = 0.2
@@ -63,7 +75,7 @@ asteroidSizeSmall : Float
 asteroidSizeSmall = 0.01
 
 explosionLifetime : Int
-explosionLifetime = 20
+explosionLifetime = 30
 
 explosionSpeed : Float
 explosionSpeed = 0.001
@@ -73,3 +85,5 @@ explosionSize = 0.021
 
 debrisSize : Float
 debrisSize = explosionSize / 10
+
+
