@@ -2,6 +2,7 @@ module Ship
   ( Ship
   , Status (..)
   , defaultShip
+  , invincibleShip
   , moveShip
   , killShip
   , tickShipState
@@ -16,6 +17,7 @@ import Vec2Helpers exposing (wrapVec2)
 
 type Status
   = Alive
+  | Invincible
   | Dead
 
 type alias Ship =
@@ -39,6 +41,13 @@ defaultShip =
   }
 
 
+invincibleShip : Ship
+invincibleShip =
+  { defaultShip
+  | status <- Invincible
+  }
+
+
 killShip : Ship -> Ship
 killShip ship =
   { ship
@@ -53,14 +62,20 @@ tickShipState : Ship -> Maybe Ship
 tickShipState ship =
   let
     tickCount = ship.tickCount + 1
+    ship' = { ship | tickCount <- tickCount }
   in
     case ship.status of
       Dead ->
         if tickCount < Constants.deadShipTime then
-          Just { ship | tickCount <- tickCount }
+          Just ship'
         else
           Nothing
-      _ -> Just { ship | tickCount <- tickCount }
+      Invincible ->
+        if tickCount < Constants.invincibleShipTime then
+          Just ship'
+        else
+          Just { ship' | status <- Alive }
+      _ -> Just ship'
 
 
 moveShip : Ship -> KeyboardHelpers.Arrows -> Ship

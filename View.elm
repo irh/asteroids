@@ -66,8 +66,8 @@ shotRadius = shipHeight * Constants.shotShipRatio
 renderShip : Ship -> Float -> Form
 renderShip ship factor =
   case ship.status of
-    Ship.Alive -> renderLiveShip ship factor
     Ship.Dead -> renderShipDebris ship factor
+    _ -> renderLiveShip ship factor
 
 
 renderLiveShip : Ship -> Float -> Form
@@ -75,9 +75,11 @@ renderLiveShip ship factor =
   let
     shipPosition = (scaleTuple (asTuple ship.position) factor)
     shipSize = (Constants.shipSize * factor)
+    showShip = ship.status == Ship.Alive || (ship.tickCount % 20 < 10)
+    lineStyle = if showShip then shipLineStyle else backgroundLineStyle
     shipTransform = (\path ->
       scalePath path shipSize
-      |> traced shipLineStyle
+      |> traced lineStyle
       )
     showThrust = ship.thrust && (ship.tickCount % 3 == 0)
     shipPaths = if showThrust then [ shipPath, thrustPath ] else [ shipPath ]
@@ -277,6 +279,13 @@ shipLineStyle =
   { defaultLine
   | color <- shipColor
   , join <- Clipped
+  }
+
+
+backgroundLineStyle : LineStyle
+backgroundLineStyle =
+  { defaultLine
+  | color <- backgroundColor
   }
 
 

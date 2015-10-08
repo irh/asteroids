@@ -282,4 +282,4 @@ tickShipState game =
       Just ship' ->
         { game | ship <- ship' }
       Nothing ->
-        { game | ship <- defaultShip }
+        { game | ship <- invincibleShip }

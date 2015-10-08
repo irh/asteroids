@@ -38,6 +38,9 @@ spaceFriction = 0.988
 maxMomentum : Float
 maxMomentum = 0.0125
 
+invincibleShipTime : Int
+invincibleShipTime = 100
+
 deadShipTime : Int
 deadShipTime = 120
 
