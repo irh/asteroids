@@ -35,14 +35,14 @@ view (w, h) game =
       |> outlined borderLineStyle
       |> move (0, 0)
     ship = renderShip game.ship factor
-    shots = List.concatMap (\shot -> renderShot shot factor) game.shots
+    shots = List.map (\shot -> renderShot shot factor) game.shots
     asteroids =
       List.map (\asteroid -> renderAsteroid asteroid factor) game.asteroids
     explosions =
       List.map (\explosion -> renderExplosion explosion factor) game.explosions
   in
     collage (floor width) (floor height)
-      (List.concat [[background], ship, shots, asteroids, explosions, [border]])
+      (background :: ship :: List.concat [shots, asteroids, explosions, [border]])
     |> container w h middle
     |> color backgroundColor
 
@@ -63,14 +63,14 @@ flameY2 = -shipHeight - flameOffset
 shotRadius = shipHeight * Constants.shotShipRatio
 
 
-renderShip : Ship -> Float -> List Form
+renderShip : Ship -> Float -> Form
 renderShip ship factor =
   case ship.status of
     Ship.Alive -> renderLiveShip ship factor
-    Ship.Dead _ -> renderShipDebris ship factor
+    Ship.Dead -> renderShipDebris ship factor
 
 
-renderLiveShip : Ship -> Float -> List Form
+renderLiveShip : Ship -> Float -> Form
 renderLiveShip ship factor =
   let
     shipPosition = (scaleTuple (asTuple ship.position) factor)
@@ -78,57 +78,55 @@ renderLiveShip ship factor =
     shipTransform = (\path ->
       scalePath path shipSize
       |> traced shipLineStyle
-      |> move shipPosition
-      |> rotate ship.angle
       )
+    showThrust = ship.thrust && (ship.tickCount % 3 == 0)
+    shipPaths = if showThrust then [ shipPath, thrustPath ] else [ shipPath ]
+    shipShape = List.map shipTransform shipPaths
   in
-    if ship.thrust then
-      [ shipTransform shipPath, shipTransform thrustPath ]
-    else
-      [ shipTransform shipPath ]
+    group shipShape
+    |> move shipPosition
+    |> rotate ship.angle
 
 
-renderShipDebris : Ship -> Float -> List Form
+renderShipDebris : Ship -> Float -> Form
 renderShipDebris ship factor =
-  case ship.status of
-    Ship.Dead tickCount ->
-      let
-        progress = (toFloat tickCount) / (toFloat Constants.deadShipTime) + 0.5
-        shipSize = Constants.shipSize * factor
-        debrisSize = progress * Constants.shipDebrisSize * factor
-        renderDebris (lineSize, angle, moveAngle, yOffset) =
-          segment
-            (scaleTuple (0, -0.5) (lineSize * shipSize))
-            (scaleTuple (0, 0.5) (lineSize * shipSize))
-          |> traced shipLineStyle
-          |> rotate angle
-          |> move (0, yOffset * shipSize)
-          |> move (asTuple (rotVec moveAngle { x = 0, y = debrisSize }))
-        debris = List.map renderDebris
-          [ (1.0, pi / 8, -pi / 6, -0.25)
-          , (1.0, -pi / 8, pi / 6, -0.25)
-          , (0.5, pi / 2, pi, 0)
-          ]
-      in
-        [ group debris
-        |> move (scaleTuple (asTuple ship.position) factor)
-        |> rotate ship.angle
-        ]
-    _ -> []
+  let
+    progress = (toFloat ship.tickCount) / (toFloat Constants.deadShipTime) + 0.5
+    shipSize = Constants.shipSize * factor
+    debrisSize = progress * Constants.shipDebrisSize * factor
+    renderDebris (lineSize, angle, moveAngle, yOffset) =
+      segment
+        (scaleTuple (0, -0.5) (lineSize * shipSize))
+        (scaleTuple (0, 0.5) (lineSize * shipSize))
+      |> traced shipLineStyle
+      |> rotate angle
+      |> move (0, yOffset * shipSize)
+      |> move (asTuple (rotVec moveAngle { x = 0, y = debrisSize }))
+    debris = List.map renderDebris
+      [ (1.0, pi / 8, -pi / 6, -0.25)
+      , (1.0, -pi / 8, pi / 6, -0.25)
+      , (0.5, pi / 2, pi, 0)
+      ]
+  in
+    group debris
+    |> move (scaleTuple (asTuple ship.position) factor)
+    |> rotate ship.angle
 
 
-renderShot : Shot -> Float -> List Form
+renderShot : Shot -> Float -> Form
 renderShot shot factor =
   let
-    shotTransform = (\path ->
+    renderShotLine = (\path ->
       scalePath path (Constants.shipSize * factor)
       |> traced shipLineStyle
-      |> move (scaleTuple (asTuple shot.position) factor)
       )
+    shotLines =
+      [ (segment (-shotRadius, 0) (shotRadius, 0))
+      , (segment (0, -shotRadius) (0, shotRadius))
+      ]
   in
-    [ shotTransform (segment (-shotRadius, 0) (shotRadius, 0))
-    , shotTransform (segment (0, -shotRadius) (0, shotRadius))
-    ]
+    group (List.map renderShotLine shotLines)
+    |> move (scaleTuple (asTuple shot.position) factor)
 
 
 renderAsteroid : Asteroid -> Float -> Form

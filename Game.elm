@@ -243,7 +243,7 @@ shipCollisions game =
 addShot : Model -> Model
 addShot game =
   case game.ship.status of
-    Ship.Dead _ -> game
+    Ship.Dead -> game
     _ ->
       let
         shotOffset = Constants.shipSize / 2 + Constants.shotSize / 2
@@ -275,14 +275,11 @@ tickExplosions game =
 
 tickShipState : Model -> Model
 tickShipState game =
-  case game.ship.status of
-    Ship.Dead _ ->
-      let
-        ship' = tickDeadShip game.ship
-      in
-        case ship' of
-          Just ship ->
-            { game | ship <- ship }
-          Nothing ->
-            { game | ship <- defaultShip }
-    _ -> game
+  let
+    ship = Ship.tickShipState game.ship
+  in
+    case ship of
+      Just ship' ->
+        { game | ship <- ship' }
+      Nothing ->
+        { game | ship <- defaultShip }
