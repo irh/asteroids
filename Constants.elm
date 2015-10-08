@@ -14,11 +14,20 @@ gameBounds = ({x = -gameWidth / 2, y = -gameHeight / 2}, {x = gameWidth / 2, y =
 tickFps : Int
 tickFps = 60
 
+startLives : Int
+startLives = 3
+
 startAsteroidCount : Int
 startAsteroidCount = 5
 
 shipSize : Float
 shipSize = 0.03
+
+lifeSize : Float
+lifeSize = 0.021
+
+textHeight : Float
+textHeight = shipSize
 
 shipDebrisSize : Float
 shipDebrisSize = 0.02
@@ -77,6 +86,15 @@ asteroidSizeMedium = 0.02
 asteroidSizeSmall : Float
 asteroidSizeSmall = 0.01
 
+asteroidScoreBig : Int
+asteroidScoreBig = 20
+
+asteroidScoreMedium : Int
+asteroidScoreMedium = 50
+
+asteroidScoreSmall : Int
+asteroidScoreSmall = 100
+
 explosionLifetime : Int
 explosionLifetime = 30
 
@@ -88,5 +106,3 @@ explosionSize = 0.021
 
 debrisSize : Float
 debrisSize = explosionSize / 10
-
-

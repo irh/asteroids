@@ -35,14 +35,25 @@ view (w, h) game =
       |> outlined borderLineStyle
       |> move (0, 0)
     ship = renderShip game.ship factor
+    lives = renderLives game.lives factor width height
     shots = List.map (\shot -> renderShot shot factor) game.shots
     asteroids =
       List.map (\asteroid -> renderAsteroid asteroid factor) game.asteroids
     explosions =
       List.map (\explosion -> renderExplosion explosion factor) game.explosions
+    score = scoreText game.score width height factor
   in
     collage (floor width) (floor height)
-      (background :: ship :: List.concat [shots, asteroids, explosions, [border]])
+      ( background
+        :: ship
+        :: lives
+        :: List.concat
+          [ shots
+          , asteroids
+          , explosions
+          , [border, score]
+          ]
+      )
     |> container w h middle
     |> color backgroundColor
 
@@ -113,6 +124,19 @@ renderShipDebris ship factor =
     group debris
     |> move (scaleTuple (asTuple ship.position) factor)
     |> rotate ship.angle
+
+
+renderLives : Int -> Float -> Float -> Float -> Form
+renderLives lives factor width height =
+  let
+    shipSize = (Constants.lifeSize * factor)
+    ship = scalePath shipPath shipSize
+      |> traced shipLineStyle
+    ships = List.repeat lives ship
+      |> List.indexedMap (\i ship' -> (ship |> move ((toFloat i) * shipSize, 0)))
+  in
+    group ships
+    |> move (-width / 2 + shipSize, height / 2 - shipSize)
 
 
 renderShot : Shot -> Float -> Form
@@ -302,4 +326,41 @@ borderLineStyle =
   | color <- borderColor
   , width <- 2
   }
+
+
+textColor = rgb 250 250 250
+
+
+styledText : Color -> String -> Float -> Form
+styledText color string factor =
+  Text.fromString string
+  |> Text.style (textStyle color factor)
+  |> Graphics.Collage.outlinedText shipLineStyle
+
+
+textStyle : Color -> Float -> Text.Style
+textStyle color factor =
+  { typeface = [ "monospace" ]
+  , height = Just (Constants.textHeight * factor)
+  , color = color
+  , bold = False
+  , italic = False
+  , line = Nothing
+  }
+
+
+scoreText : Int -> Float -> Float -> Float -> Form
+scoreText score width height factor =
+  let
+    scoreString = toString score
+    text' = Text.fromString scoreString
+      |> Text.style (textStyle textColor factor)
+      |> centered
+    textWidth = toFloat (widthOf text')
+    textHeight = toFloat (heightOf text')
+    xOffset = width / 2 - textWidth / 2 - Constants.textHeight * factor / 3
+    yOffset = height / 2 - textHeight / 2 + Constants.textHeight * factor / 10
+  in
+    styledText textColor scoreString factor
+      |> move (xOffset, yOffset)
 

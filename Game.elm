@@ -44,6 +44,7 @@ type alias Model =
   , explosions : List Explosion
   , score : Int
   , level : Int
+  , lives : Int
   , seed : Seed
   }
 
@@ -58,6 +59,7 @@ defaultGame =
   , explosions = []
   , score = 0
   , level = 0
+  , lives = Constants.startLives
   , seed = Random.initialSeed 0
   }
 
@@ -184,12 +186,14 @@ shotVsAsteroids shot game =
                   let game'' =
                     { game' | asteroids <- a :: b :: asteroids', seed <- seed' }
                       |> addExplosion asteroid.position
+                      |> addScore (asteroidScore asteroid)
                   in
                     Trampoline.Done (True, [], game'')
                 Nothing ->
                   let game'' =
                     { game' | asteroids <- asteroids' }
                       |> addExplosion asteroid.position
+                      |> addScore (asteroidScore asteroid)
                   in
                     Trampoline.Done (True, [], game'')
           else
@@ -283,3 +287,10 @@ tickShipState game =
         { game | ship <- ship' }
       Nothing ->
         { game | ship <- invincibleShip }
+
+
+addScore : Int -> Model -> Model
+addScore score game =
+  { game
+  | score <- game.score + score
+  }

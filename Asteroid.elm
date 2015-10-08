@@ -6,6 +6,7 @@ module Asteroid
   , tickAsteroid
   , destroyAsteroid
   , asteroidSize
+  , asteroidScore
   ) where
 
 import Constants
@@ -151,3 +152,11 @@ asteroidSize asteroid =
     Big -> Constants.asteroidSizeBig
     Medium -> Constants.asteroidSizeMedium
     Small -> Constants.asteroidSizeSmall
+
+
+asteroidScore : Asteroid -> Int
+asteroidScore asteroid =
+  case asteroid.size of
+    Big -> Constants.asteroidScoreBig
+    Medium -> Constants.asteroidScoreMedium
+    Small -> Constants.asteroidScoreSmall
