@@ -14,6 +14,15 @@ randomVec2 seed min max =
     ({x = x, y = y}, seed1)
 
 
+randomVec2InBounds : Seed -> (Vec2, Vec2) -> (Vec2, Seed)
+randomVec2InBounds seed (min, max) =
+  let
+    (x, seed0) = randomFloat min.x max.x seed
+    (y, seed1) = randomFloat min.y max.y seed0
+  in
+    ({x = x, y = y}, seed1)
+
+
 randomVec2X : Seed -> Float -> Float -> Float -> (Vec2, Seed)
 randomVec2X seed y min max =
   let

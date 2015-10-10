@@ -3,6 +3,7 @@ module Asteroid
   , Size (..)
   , Kind (..)
   , newAsteroid
+  , randomAsteroid
   , tickAsteroid
   , destroyAsteroid
   , asteroidSize
@@ -61,6 +62,24 @@ newAsteroid seed =
     asteroid =
       { defaultAsteroid
       | position <- position
+      }
+  in
+    (asteroid, seed'')
+    |> randomizeNewAsteroidProperties
+
+
+randomAsteroid : Seed -> (Asteroid, Seed)
+randomAsteroid seed =
+  let
+    (sizeSelect, seed') = randomInt 0 3 seed
+    size = if | sizeSelect == 0 -> Big
+              | sizeSelect == 1 -> Medium
+              | otherwise -> Small
+    (position, seed'') = randomVec2InBounds seed' Constants.gameBounds
+    asteroid =
+      { defaultAsteroid
+      | size <- size
+      , position <- position
       }
   in
     (asteroid, seed'')

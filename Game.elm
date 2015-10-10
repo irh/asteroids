@@ -31,7 +31,6 @@ type Mode
   = NewGame
   | Play
   | Pause
-  | Dead Int
   | GameOver
 
 
@@ -59,7 +58,7 @@ defaultGame =
   , explosions = []
   , score = 0
   , level = 0
-  , lives = Constants.startLives
+  , lives = 0
   , seed = Random.initialSeed 0
   }
 
@@ -68,14 +67,28 @@ initialGame : Update -> Model
 initialGame input =
   case input of
     StartTime time ->
-      { defaultGame | seed <- Random.initialSeed (round time) }
-      |> newLevel
+      let
+        seed = Random.initialSeed (round time)
+        (asteroids, seed') =
+          Random.generate
+            (Random.list Constants.newGameAsteroidCount
+              <| Random.customGenerator Asteroid.randomAsteroid)
+            seed
+      in
+        { defaultGame
+        | mode <- NewGame
+        , asteroids <- asteroids
+        , seed <- seed'
+        }
     _ -> defaultGame
 
 
 newGame : Model -> Model
 newGame game =
-  { defaultGame | seed <- game.seed }
+  { defaultGame
+  | seed <- game.seed
+  , lives <- Constants.startLives
+  }
   |> newLevel
 
 
@@ -101,7 +114,10 @@ updateGame input game =
     Arrows arrows -> { game | arrows <- arrows }
     Wasd wasd -> { game | arrows <- wasd }
     Tick _ -> tickGame game
-    Space down -> if down then addShot game else game
+    Space down ->
+      case game.mode of
+        Play -> if down then addShot game else game
+        _ -> changeGameMode game
     _ -> game
 
 
@@ -111,7 +127,6 @@ changeGameMode game =
     NewGame -> newGame game
     Play -> { game | mode <- Pause }
     Pause -> { game | mode <- Play }
-    Dead _ -> game
     GameOver -> newGame game
 
 
@@ -119,7 +134,9 @@ tickGame : Model -> Model
 tickGame game =
   Debug.watch "Game" <|
   case game.mode of
+    NewGame -> tickPlay game
     Play -> tickPlay game
+    GameOver -> tickPlay game
     _ -> game
 
 
@@ -130,8 +147,9 @@ tickPlay game =
   |> shotCollisions
   |> shipCollisions
   |> tickExplosions
-  |> checkForNewLevel
   |> tickShipState
+  |> checkForNewLevel
+  |> checkForGameOver
 
 
 moveGameItems : Model -> Model
@@ -148,6 +166,14 @@ checkForNewLevel game =
   case game.asteroids of
     [] -> newLevel game
     _ -> game
+
+
+checkForGameOver : Model -> Model
+checkForGameOver game =
+  if game.mode /= NewGame && game.lives == 0 then
+    { game | mode <- GameOver }
+  else
+    game
 
 
 shotCollisions : Model -> Model
@@ -229,18 +255,22 @@ shipVsAsteroid ship asteroid =
 
 shipCollisions : Model -> Model
 shipCollisions game =
-  case game.ship.status of
-    Alive ->
-      let
-        collision =
-          List.any (\asteroid -> shipVsAsteroid game.ship asteroid) game.asteroids
-      in
-        if collision then
-          { game
-          | ship <- killShip game.ship
-          } |> addExplosion game.ship.position
-        else
-          game
+  case game.mode of
+    Play ->
+      case game.ship.status of
+        Alive ->
+          let
+            collision =
+              List.any (\asteroid -> shipVsAsteroid game.ship asteroid) game.asteroids
+          in
+            if collision then
+              { game
+              | ship <- killShip game.ship
+              , lives <- game.lives - 1
+              } |> addExplosion game.ship.position
+            else
+              game
+        _ -> game
     _ -> game
 
 

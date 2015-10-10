@@ -20,14 +20,20 @@ startLives = 3
 startAsteroidCount : Int
 startAsteroidCount = 5
 
+newGameAsteroidCount : Int
+newGameAsteroidCount = 30
+
 shipSize : Float
 shipSize = 0.03
 
 lifeSize : Float
 lifeSize = 0.021
 
-textHeight : Float
-textHeight = shipSize
+gameTextHeight : Float
+gameTextHeight = shipSize
+
+scoreTextHeight : Float
+scoreTextHeight = shipSize
 
 shipDebrisSize : Float
 shipDebrisSize = 0.02

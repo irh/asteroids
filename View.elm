@@ -34,14 +34,17 @@ view (w, h) game =
       rect width height
       |> outlined borderLineStyle
       |> move (0, 0)
-    ship = renderShip game.ship factor
+    ship = renderShip game factor
     lives = renderLives game.lives factor width height
     shots = List.map (\shot -> renderShot shot factor) game.shots
     asteroids =
       List.map (\asteroid -> renderAsteroid asteroid factor) game.asteroids
     explosions =
       List.map (\explosion -> renderExplosion explosion factor) game.explosions
-    score = scoreText game.score width height factor
+    score = case game.mode of
+      Game.NewGame -> group []
+      _ -> scoreText game.score width height factor
+    gameText = renderGameText game.mode factor
   in
     collage (floor width) (floor height)
       ( background
@@ -52,6 +55,7 @@ view (w, h) game =
           , asteroids
           , explosions
           , [border, score]
+          , gameText
           ]
       )
     |> container w h middle
@@ -74,11 +78,14 @@ flameY2 = -shipHeight - flameOffset
 shotRadius = shipHeight * Constants.shotShipRatio
 
 
-renderShip : Ship -> Float -> Form
-renderShip ship factor =
-  case ship.status of
-    Ship.Dead -> renderShipDebris ship factor
-    _ -> renderLiveShip ship factor
+renderShip : Game.Model -> Float -> Form
+renderShip game factor =
+  case game.ship.status of
+    Ship.Dead -> renderShipDebris game.ship factor
+    _ ->
+      case game.mode of
+        Game.Play -> renderLiveShip game.ship factor
+        _ -> group []
 
 
 renderLiveShip : Ship -> Float -> Form
@@ -331,17 +338,17 @@ borderLineStyle =
 textColor = rgb 250 250 250
 
 
-styledText : Color -> String -> Float -> Form
-styledText color string factor =
+styledText : Text.Style -> String -> Form
+styledText style string =
   Text.fromString string
-  |> Text.style (textStyle color factor)
+  |> Text.style style
   |> Graphics.Collage.outlinedText shipLineStyle
 
 
 textStyle : Color -> Float -> Text.Style
-textStyle color factor =
+textStyle color height =
   { typeface = [ "monospace" ]
-  , height = Just (Constants.textHeight * factor)
+  , height = Just height
   , color = color
   , bold = False
   , italic = False
@@ -353,14 +360,36 @@ scoreText : Int -> Float -> Float -> Float -> Form
 scoreText score width height factor =
   let
     scoreString = toString score
-    text' = Text.fromString scoreString
-      |> Text.style (textStyle textColor factor)
-      |> centered
+    style = textStyle textColor (Constants.scoreTextHeight * factor)
+    text' = Text.fromString scoreString |> Text.style style |> centered
     textWidth = toFloat (widthOf text')
     textHeight = toFloat (heightOf text')
-    xOffset = width / 2 - textWidth / 2 - Constants.textHeight * factor / 3
-    yOffset = height / 2 - textHeight / 2 + Constants.textHeight * factor / 10
+    xOffset = width / 2 - textWidth / 2 - Constants.scoreTextHeight * factor / 3
+    yOffset = height / 2 - textHeight / 2 + Constants.scoreTextHeight * factor / 10
   in
-    styledText textColor scoreString factor
-      |> move (xOffset, yOffset)
+    styledText style scoreString
+    |> move (xOffset, yOffset)
+
+
+renderGameText : Game.Mode -> Float -> List Form
+renderGameText mode factor =
+  if mode == Game.Play then
+    []
+  else
+    let
+      style = textStyle textColor (Constants.gameTextHeight * factor)
+      (first, second) = case mode of
+        Game.NewGame -> ("ASTEROIDS", "PRESS SPACE TO PLAY")
+        Game.Pause -> ("PAUSED", "PRESS SPACE TO CONTINUE")
+        Game.GameOver -> ("GAME OVER", "PRESS SPACE TO PLAY AGAIN")
+        _ -> ("", "")
+      text' = Text.fromString "_" |> Text.style style |> centered
+      textHeight = toFloat (heightOf text')
+      yOffset = textHeight / 2 + Constants.gameTextHeight * factor / 5
+      line1 = styledText style first
+      line2 = styledText style second
+    in
+      [ line1 |> move (0, yOffset)
+      , line2 |> move (0, -yOffset)
+      ]
 
