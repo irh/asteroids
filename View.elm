@@ -27,44 +27,29 @@ view (w, h) game =
     (w', h') = (toFloat w, toFloat h)
     factor = min w' h' - 2.0
     (width, height) = ((Constants.gameWidth * factor, Constants.gameHeight * factor))
-    background =
-      rect width height
-      |> filled backgroundColor
-    border =
-      rect width height
-      |> outlined borderLineStyle
-      |> move (0, 0)
-    ship = renderShip game factor
-    lives = renderLives game.lives factor width height
-    shots = List.map (\shot -> renderShot shot factor) game.shots
-    asteroids =
-      List.map (\asteroid -> renderAsteroid asteroid factor) game.asteroids
-    explosions =
-      List.map (\explosion -> renderExplosion explosion factor) game.explosions
+    background = rect width height |> filled backgroundColor
+    border = rect width height |> outlined borderLineStyle |> move (0, 0)
     score = case game.mode of
       Game.NewGame -> group []
       _ -> scoreText game.score width height factor
-    gameText = renderGameText game.mode factor
   in
     collage (floor width) (floor height)
-      ( background
-        :: ship
-        :: lives
-        :: List.concat
-          [ shots
-          , asteroids
-          , explosions
-          , [border, score]
-          , gameText
-          ]
-      )
+      [ background
+      , renderShip game factor
+      , renderLives game.lives factor width height
+      , renderObjects game.shots renderShot factor
+      , renderObjects game.asteroids renderAsteroid factor
+      , renderObjects game.explosions renderExplosion factor
+      , border
+      , score
+      , renderGameText game.mode factor
+      ]
     |> container w h middle
     |> color backgroundColor
 
 
 scaleTuple : (Float, Float) -> Float -> (Float, Float)
-scaleTuple (x, y) factor =
-  (x * factor, y * factor)
+scaleTuple (x, y) factor = (x * factor, y * factor)
 
 
 shipWidth = 0.6 / 2
@@ -76,6 +61,11 @@ flameOffset = shipHeight / 4.0
 flameY = crossBarY - flameOffset
 flameY2 = -shipHeight - flameOffset
 shotRadius = shipHeight * Constants.shotShipRatio
+
+
+renderObjects : List a -> (a -> Float -> Form) -> Float -> Form
+renderObjects list renderFunction factor =
+  group (List.map(\object -> renderFunction object factor) list)
 
 
 renderShip : Game.Model -> Float -> Form
@@ -363,14 +353,20 @@ textStyle color height =
   }
 
 
+textSize : String -> Text.Style -> (Float, Float)
+textSize string style =
+  let
+    text = Text.fromString string |> Text.style style |> centered
+  in
+    (toFloat (widthOf text), toFloat (heightOf text))
+
+
 scoreText : Int -> Float -> Float -> Float -> Form
 scoreText score width height factor =
   let
     scoreString = toString score
     style = textStyle textColor (Constants.scoreTextHeight * factor)
-    text' = Text.fromString scoreString |> Text.style style |> centered
-    textWidth = toFloat (widthOf text')
-    textHeight = toFloat (heightOf text')
+    (textWidth, textHeight) = textSize scoreString style
     xOffset = width / 2 - textWidth / 2 - Constants.scoreTextHeight * factor / 3
     yOffset = height / 2 - textHeight / 2 + Constants.scoreTextHeight * factor / 10
   in
@@ -378,10 +374,9 @@ scoreText score width height factor =
     |> move (xOffset, yOffset)
 
 
-renderGameText : Game.Mode -> Float -> List Form
+renderGameText : Game.Mode -> Float -> Form
 renderGameText mode factor =
-  if mode == Game.Play then
-    []
+  if mode == Game.Play then group []
   else
     let
       style = textStyle textColor (Constants.gameTextHeight * factor)
@@ -390,13 +385,12 @@ renderGameText mode factor =
         Game.Pause -> ("PAUSED", "PRESS SPACE TO CONTINUE")
         Game.GameOver -> ("GAME OVER", "PRESS SPACE TO PLAY AGAIN")
         _ -> ("", "")
-      text' = Text.fromString "_" |> Text.style style |> centered
-      textHeight = toFloat (heightOf text')
+      (_, textHeight) = textSize "_" style
       yOffset = textHeight / 2 + Constants.gameTextHeight * factor / 5
       line1 = styledText style first
       line2 = styledText style second
     in
-      [ line1 |> move (0, yOffset)
-      , line2 |> move (0, -yOffset)
-      ]
+      group [ line1 |> move (0, yOffset)
+            , line2 |> move (0, -yOffset)
+            ]
 
