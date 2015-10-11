@@ -59,6 +59,9 @@ maxMomentum = 0.0125
 invincibleShipTime : Int
 invincibleShipTime = 100
 
+hyperspaceTime : Int
+hyperspaceTime = 30
+
 deadShipTime : Int
 deadShipTime = 120
 

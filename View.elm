@@ -83,10 +83,17 @@ renderShip game factor =
   case game.ship.status of
     Ship.Dead -> renderShipDebris game.ship factor
     _ ->
-      case game.mode of
-        Game.Play -> renderLiveShip game.ship factor
-        Game.Pause -> renderLiveShip game.ship factor
-        _ -> group []
+      let
+        shipIsVisibleInGameMode = case game.mode of
+          Game.Play -> True
+          Game.Pause -> True
+          _ -> False
+        showShip = shipIsVisibleInGameMode
+          && case game.ship.status of
+            Ship.Alive -> True
+            Ship.Invincible -> game.ship.tickCount % 20 < 10
+            _ -> False
+      in if showShip then renderLiveShip game.ship factor else group []
 
 
 renderLiveShip : Ship -> Float -> Form
@@ -94,8 +101,7 @@ renderLiveShip ship factor =
   let
     shipPosition = (scaleTuple (asTuple ship.position) factor)
     shipSize = (Constants.shipSize * factor)
-    showShip = ship.status == Ship.Alive || (ship.tickCount % 20 < 10)
-    lineStyle = if showShip then shipLineStyle else backgroundLineStyle
+    lineStyle = shipLineStyle
     shipTransform = (\path ->
       scalePath path shipSize
       |> traced lineStyle

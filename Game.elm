@@ -25,6 +25,7 @@ type Update
   | Tick Float
   | Space Bool
   | Escape Bool
+  | Shift Bool
   | StartTime Float
 
 type Mode
@@ -125,6 +126,8 @@ updateGame input game =
           Pause -> changeGameMode game
           _ -> game
       else game
+    Shift down ->
+      if down then hyperspace game else game
     _ -> game
 
 
@@ -340,3 +343,14 @@ addScore score game =
     | score <- score'
     , lives <- lives
     }
+
+
+hyperspace : Model -> Model
+hyperspace game =
+  if game.mode == Play && game.ship.status /= Ship.Dead then
+    let
+      (ship, seed) = goIntoHyperspace game.ship game.seed
+    in
+      { game | ship <- ship, seed <- seed }
+  else
+    game

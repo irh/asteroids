@@ -6,18 +6,21 @@ module Ship
   , moveShip
   , killShip
   , tickShipState
+  , goIntoHyperspace
   ) where
 
 import Constants
+import Data.Vec2 exposing (..)
 import Debug
 import KeyboardHelpers
-import Data.Vec2 exposing (..)
-import Vec2Helpers exposing (wrapVec2)
+import Random exposing (Seed)
+import Vec2Helpers exposing (wrapVec2, randomVec2InBounds)
 
 
 type Status
   = Alive
   | Invincible
+  | Hyperspace
   | Dead
 
 type alias Ship =
@@ -58,6 +61,19 @@ killShip ship =
   }
 
 
+goIntoHyperspace : Ship -> Seed -> (Ship, Seed)
+goIntoHyperspace ship seed =
+  let
+    (position, seed') = randomVec2InBounds seed Constants.gameBounds
+  in
+    ( { ship
+      | status <- Hyperspace
+      , position <- position
+      , momentum <- origin
+      , tickCount <- 0
+    }, seed')
+
+
 tickShipState : Ship -> Maybe Ship
 tickShipState ship =
   let
@@ -72,6 +88,11 @@ tickShipState ship =
           Nothing
       Invincible ->
         if tickCount < Constants.invincibleShipTime then
+          Just ship'
+        else
+          Just { ship' | status <- Alive }
+      Hyperspace ->
+        if tickCount < Constants.hyperspaceTime then
           Just ship'
         else
           Just { ship' | status <- Alive }
@@ -130,4 +151,5 @@ applyThrust momentum angle =
       scaleVec (Constants.maxMomentum / momentumMagnitude) momentum'
     else
       momentum'
+
 
