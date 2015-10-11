@@ -328,6 +328,15 @@ tickShipState game =
 
 addScore : Int -> Model -> Model
 addScore score game =
-  { game
-  | score <- game.score + score
-  }
+  let
+    scoreRank x = (floor ((toFloat x) / (toFloat Constants.extraLifeMultiple)))
+    score' = game.score + score
+    lives =
+      if (scoreRank game.score) < (scoreRank score')
+        then game.lives + 1
+        else game.lives
+  in
+    { game
+    | score <- score'
+    , lives <- lives
+    }

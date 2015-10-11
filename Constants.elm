@@ -17,6 +17,9 @@ tickFps = 60
 startLives : Int
 startLives = 3
 
+extraLifeMultiple : Int
+extraLifeMultiple = 10000
+
 startAsteroidCount : Int
 startAsteroidCount = 5
 
