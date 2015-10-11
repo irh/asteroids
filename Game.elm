@@ -191,7 +191,7 @@ shotCollisions game =
   let
     shotCollision shot game' =
       let
-        (shot', game'') = shotVsAsteroids shot game'
+        (shot', game'') = objectVsAsteroids shot game' shotVsAsteroid
       in
         case shot' of
           Just shot'' ->
@@ -206,46 +206,46 @@ shotCollisions game =
       game.shots
 
 
-shotVsAsteroids : Shot -> Model -> (Maybe Shot, Model)
-shotVsAsteroids shot game =
+objectVsAsteroids : a -> Model -> (a -> Asteroid -> Bool) -> (Maybe a, Model)
+objectVsAsteroids object game collisionTest =
   let
-    shotVsAsteroids' (_, asteroidsToCheck, game') =
+    objectVsAsteroids' (_, asteroidsToCheck, game') =
       case asteroidsToCheck of
         asteroid :: tail ->
-          if shotVsAsteroid shot asteroid then
-            let
-              destruction = destroyAsteroid asteroid game'.seed
-              asteroids' = List.append game'.asteroids tail
-            in
-              case destruction of
-                Just (a, b, seed') ->
-                  let game'' =
-                    { game' | asteroids <- a :: b :: asteroids', seed <- seed' }
-                      |> addExplosion asteroid.position
-                      |> addScore (asteroidScore asteroid)
-                  in
-                    Trampoline.Done (True, [], game'')
-                Nothing ->
-                  let game'' =
-                    { game' | asteroids <- asteroids' }
-                      |> addExplosion asteroid.position
-                      |> addScore (asteroidScore asteroid)
-                  in
-                    Trampoline.Done (True, [], game'')
+          if collisionTest object asteroid then
+            asteroidDestruction asteroid tail game'
           else
-            Trampoline.Continue
-              (\_ -> shotVsAsteroids'
-                (False, tail, { game' | asteroids <- asteroid :: game'.asteroids }))
+            let game'' = { game' | asteroids <- asteroid :: game'.asteroids }
+            in Trampoline.Continue (\_ -> objectVsAsteroids' (False, tail, game''))
         [] -> Trampoline.Done (False, [], game')
-
+    emptyAsteroids = { game | asteroids <- [] }
     (collision, _, game') =
-      Trampoline.trampoline
-        (shotVsAsteroids' (False, game.asteroids, { game | asteroids <- [] }))
+      Trampoline.trampoline (objectVsAsteroids' (False, game.asteroids, emptyAsteroids))
   in
     if collision then
       (Nothing, game')
     else
-      (Just shot, game')
+      (Just object, game')
+
+
+asteroidDestruction : Asteroid -> List Asteroid -> Model
+  -> Trampoline.Trampoline (Bool, List Asteroid, Model)
+asteroidDestruction asteroid tail game =
+  let
+    destruction = destroyAsteroid asteroid game.seed
+    asteroids = List.append game.asteroids tail
+    game' =
+      case destruction of
+        Just (a, b, seed') ->
+          { game | asteroids <- a :: b :: asteroids, seed <- seed' }
+            |> addExplosion asteroid.position
+            |> addScore (asteroidScore asteroid)
+        Nothing ->
+          { game | asteroids <- asteroids }
+            |> addExplosion asteroid.position
+            |> addScore (asteroidScore asteroid)
+  in
+    Trampoline.Done (True, [], game')
 
 
 asteroidCollisionTest : (Vec2, Float) -> Asteroid -> Bool
@@ -270,16 +270,15 @@ shipCollisions game =
       case game.ship.status of
         Alive ->
           let
-            collision =
-              List.any (\asteroid -> shipVsAsteroid game.ship asteroid) game.asteroids
+            (ship, game') = objectVsAsteroids game.ship game shipVsAsteroid
           in
-            if collision then
-              { game
-              | ship <- killShip game.ship
-              , lives <- game.lives - 1
-              } |> addExplosion game.ship.position
-            else
-              game
+            case ship of
+              Just ship' -> game'
+              Nothing ->
+                { game'
+                | ship <- killShip game.ship
+                , lives <- game.lives - 1
+                } |> addExplosion game.ship.position
         _ -> game
     _ -> game
 
