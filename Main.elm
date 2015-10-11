@@ -28,7 +28,7 @@ updateSignal =
 
 gameSignal : Signal Game.Model
 gameSignal =
-  Signal.Extra.foldp' Game.updateGame Game.initialGame updateSignal
+  Signal.Extra.foldp' Game.updateGame Game.intro updateSignal
 
 
 main : Signal Element

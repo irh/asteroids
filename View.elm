@@ -11,6 +11,7 @@ import Graphics.Element exposing (..)
 import Point exposing (asTuple)
 import Ship exposing (Ship)
 import Shot exposing (Shot)
+import Saucer exposing (Saucer)
 import Text
 import Window
 
@@ -19,6 +20,8 @@ backgroundColor = rgb 0 0 0
 borderColor = rgb 255 255 255
 shipColor = rgb 255 255 255
 asteroidColor = rgb 255 255 255
+
+
 
 
 view : (Int, Int) -> Game.Model -> Element
@@ -30,13 +33,14 @@ view (w, h) game =
     background = rect width height |> filled backgroundColor
     border = rect width height |> outlined borderLineStyle |> move (0, 0)
     score = case game.mode of
-      Game.NewGame -> group []
+      Game.Intro -> group []
       _ -> scoreText game.score width height factor
   in
     collage (floor width) (floor height)
       [ background
-      , renderShip game factor
+      , renderShip game.ship factor
       , renderLives game.lives factor width height
+      , renderSaucer game.saucer factor
       , renderObjects game.shots renderShot factor
       , renderObjects game.asteroids renderAsteroid factor
       , renderObjects game.explosions renderExplosion factor
@@ -68,22 +72,23 @@ renderObjects list renderFunction factor =
   group (List.map(\object -> renderFunction object factor) list)
 
 
-renderShip : Game.Model -> Float -> Form
-renderShip game factor =
-  case game.ship.status of
-    Ship.Dead -> renderShipDebris game.ship factor
-    _ ->
-      let
-        shipIsVisibleInGameMode = case game.mode of
-          Game.Play -> True
-          Game.Pause -> True
-          _ -> False
-        showShip = shipIsVisibleInGameMode
-          && case game.ship.status of
-            Ship.Alive -> True
-            Ship.Invincible -> game.ship.tickCount % 20 < 10
-            _ -> False
-      in if showShip then renderLiveShip game.ship factor else group []
+renderShip : Maybe Ship -> Float -> Form
+renderShip maybeShip factor =
+  case maybeShip of
+    Just ship ->
+      case ship.status of
+        Ship.Dead -> renderShipDebris ship factor
+        _ ->
+          let showShip =
+            case ship.status of
+              Ship.Alive -> True
+              Ship.Invincible -> ship.tickCount % 20 < 10
+              _ -> False
+          in if showShip then
+            renderLiveShip ship factor
+          else
+            group []
+    Nothing -> group []
 
 
 renderLiveShip : Ship -> Float -> Form
@@ -141,6 +146,37 @@ renderLives lives factor width height =
   in
     group ships
     |> move (-width / 2 + shipSize, height / 2 - shipSize)
+
+
+renderSaucer : Maybe Saucer -> Float -> Form
+renderSaucer maybeSaucer factor =
+  case maybeSaucer of
+    Nothing -> group []
+    Just saucer ->
+      let
+        shipSize = (Saucer.saucerSize saucer) * factor
+        shipTransform = (\path ->
+          scalePath path shipSize
+          |> outlined shipLineStyle
+          )
+        outlinePath =
+          [ (-0.5, 0)
+          , (-0.1667, 0.23)
+          , (-0.08, 0.4)
+          , (0.08, 0.4)
+          , (0.1667, 0.23)
+          , (0.5, 0)
+          , (0.2, -0.2)
+          , (-0.2, -0.2)
+          ]
+        saucerShapes = List.map shipTransform
+          [ outlinePath
+          , [(-0.5, 0), (0.5, 0)]
+          , [(-0.1667, 0.23), (0.1667, 0.23)]
+          ]
+      in
+        group saucerShapes
+        |> move (scaleTuple (asTuple saucer.position) factor)
 
 
 renderShot : Shot -> Float -> Form
@@ -381,7 +417,7 @@ renderGameText mode factor =
     let
       style = textStyle textColor (Constants.gameTextHeight * factor)
       (first, second) = case mode of
-        Game.NewGame -> ("ASTEROIDS", "PRESS SPACE TO PLAY")
+        Game.Intro -> ("ASTEROIDS", "PRESS SPACE TO PLAY")
         Game.Pause -> ("PAUSED", "PRESS SPACE TO CONTINUE")
         Game.GameOver -> ("GAME OVER", "PRESS SPACE TO PLAY AGAIN")
         _ -> ("", "")

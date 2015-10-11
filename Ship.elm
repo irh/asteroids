@@ -2,6 +2,7 @@ module Ship
   ( Ship
   , Status (..)
   , defaultShip
+  , newShip
   , invincibleShip
   , moveShip
   , killShip
@@ -35,12 +36,19 @@ type alias Ship =
 
 defaultShip : Ship
 defaultShip =
-  { status = Alive
+  { status = Dead
   , tickCount = 0
   , position = origin
   , momentum = origin
   , angle = 0.0
   , thrust = False
+  }
+
+
+newShip : Ship
+newShip =
+  { defaultShip
+  | status <- Alive
   }
 
 
@@ -61,49 +69,61 @@ killShip ship =
   }
 
 
-goIntoHyperspace : Ship -> Seed -> (Ship, Seed)
-goIntoHyperspace ship seed =
-  let
-    (position, seed') = randomVec2InBounds seed Constants.gameBounds
-  in
-    ( { ship
-      | status <- Hyperspace
-      , position <- position
-      , momentum <- origin
-      , tickCount <- 0
-    }, seed')
+goIntoHyperspace : Maybe Ship -> Seed -> (Maybe Ship, Seed)
+goIntoHyperspace maybeShip seed =
+  case maybeShip of
+    Nothing -> (Nothing, seed)
+    Just ship ->
+      let
+        (position, seed') = randomVec2InBounds seed Constants.gameBounds
+        ship' =
+          { ship
+          | status <- Hyperspace
+          , position <- position
+          , momentum <- origin
+          , tickCount <- 0
+          }
+      in (Just ship', seed')
 
 
-tickShipState : Ship -> Maybe Ship
-tickShipState ship =
-  let
-    tickCount = ship.tickCount + 1
-    ship' = { ship | tickCount <- tickCount }
-  in
-    case ship.status of
-      Dead ->
-        if tickCount < Constants.deadShipTime then
-          Just ship'
-        else
-          Nothing
-      Invincible ->
-        if tickCount < Constants.invincibleShipTime then
-          Just ship'
-        else
-          Just { ship' | status <- Alive }
-      Hyperspace ->
-        if tickCount < Constants.hyperspaceTime then
-          Just ship'
-        else
-          Just { ship' | status <- Alive }
-      _ -> Just ship'
+tickShipState : Maybe Ship -> Maybe Ship
+tickShipState maybeShip =
+  case maybeShip of
+    Nothing -> Nothing
+    Just ship ->
+      let
+        tickCount = ship.tickCount + 1
+        ship' = { ship | tickCount <- tickCount }
+      in
+        case ship.status of
+          Dead ->
+            if tickCount < Constants.deadShipTime then
+              Just ship'
+            else
+              Nothing
+          Invincible ->
+            if tickCount < Constants.invincibleShipTime then
+              Just ship'
+            else
+              Just { ship' | status <- Alive }
+          Hyperspace ->
+            if tickCount < Constants.hyperspaceTime then
+              Just ship'
+            else
+              Just { ship' | status <- Alive }
+          _ -> Just ship'
 
 
-moveShip : Ship -> KeyboardHelpers.Arrows -> Ship
-moveShip ship arrows =
-  case ship.status of
-    Dead -> moveDeadShip ship
-    _ -> moveLiveShip ship arrows
+moveShip : Maybe Ship -> KeyboardHelpers.Arrows -> Maybe Ship
+moveShip maybeShip arrows =
+  case maybeShip of
+    Nothing -> Nothing
+    Just ship ->
+      let ship' =
+        case ship.status of
+          Dead -> moveDeadShip ship
+          _ -> moveLiveShip ship arrows
+      in Just ship'
 
 
 moveDeadShip : Ship -> Ship

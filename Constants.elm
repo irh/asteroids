@@ -8,8 +8,20 @@ gameWidth = 1.0
 gameHeight : Float
 gameHeight = 2.0 / 3.0
 
+gameBoundsMinX = -gameWidth / 2
+gameBoundsMaxX = gameWidth / 2
+
+gameBoundsMinY = -gameHeight / 2
+gameBoundsMaxY = gameHeight / 2
+
+gameBoundsMin : Vec2
+gameBoundsMin = { x = gameBoundsMinX, y = gameBoundsMinY }
+
+gameBoundsMax : Vec2
+gameBoundsMax = { x = gameBoundsMaxX, y = gameBoundsMaxY }
+
 gameBounds : (Vec2, Vec2)
-gameBounds = ({x = -gameWidth / 2, y = -gameHeight / 2}, {x = gameWidth / 2, y = gameHeight / 2})
+gameBounds = (gameBoundsMin, gameBoundsMax)
 
 tickFps : Int
 tickFps = 60
@@ -118,3 +130,45 @@ explosionSize = 0.021
 
 debrisSize : Float
 debrisSize = explosionSize / 10
+
+saucerSizeBig : Float
+saucerSizeBig = shipSize * 1.5
+
+saucerSizeSmall : Float
+saucerSizeSmall = saucerSizeBig / 2
+
+saucerSizeCollisionRatio : Float
+saucerSizeCollisionRatio = 0.4
+
+saucerSpeedX : Float
+saucerSpeedX = 0.002
+
+saucerSpeedY : Float
+saucerSpeedY = 0.0015
+
+saucerDirectionTicksMin : Int
+saucerDirectionTicksMin = 50
+
+saucerDirectionTicksMax : Int
+saucerDirectionTicksMax = 200
+
+saucerShotTicks : Int
+saucerShotTicks = 40
+
+saucerScoreBig : Int
+saucerScoreBig = 200
+
+saucerScoreSmall : Int
+saucerScoreSmall = 1000
+
+saucerShotAccuracyRange : (Float, Float)
+saucerShotAccuracyRange = (0.93, 0.999)
+
+saucerTicksMin : Int
+saucerTicksMin = 300
+
+saucerTicksMax : Int
+saucerTicksMax = 1000
+
+maxDifficultyScore : Int
+maxDifficultyScore = 40000

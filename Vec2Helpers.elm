@@ -63,3 +63,12 @@ asTuple point = (point.x, point.y)
 circlesOverlap : (Vec2, Float) -> (Vec2, Float) -> Bool
 circlesOverlap (posA, radiusA) (posB, radiusB) =
   (distance posA posB) <= (radiusA + radiusB)
+
+
+angleBetween : Vec2 -> Vec2 -> Float
+angleBetween a b =
+  let
+    xDiff = b.x - a.x
+    yDiff = b.y - a.y
+  in
+    atan2 xDiff yDiff
