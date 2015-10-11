@@ -118,6 +118,13 @@ updateGame input game =
       case game.mode of
         Play -> if down then addShot game else game
         _ -> changeGameMode game
+    Escape down ->
+      if down then
+        case game.mode of
+          Play -> changeGameMode game
+          Pause -> changeGameMode game
+          _ -> game
+      else game
     _ -> game
 
 

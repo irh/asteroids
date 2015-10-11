@@ -85,6 +85,7 @@ renderShip game factor =
     _ ->
       case game.mode of
         Game.Play -> renderLiveShip game.ship factor
+        Game.Pause -> renderLiveShip game.ship factor
         _ -> group []
 
 
