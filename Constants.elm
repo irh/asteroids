@@ -60,10 +60,10 @@ turningSpeed : Float
 turningSpeed = 0.1
 
 thrust : Vec2
-thrust = { x = 0, y = 0.00015 }
+thrust = { x = 0, y = 0.00013 }
 
 spaceFriction : Float
-spaceFriction = 0.988
+spaceFriction = 0.99
 
 maxMomentum : Float
 maxMomentum = 0.0125
@@ -87,10 +87,10 @@ shotSize : Float
 shotSize = shipSize * shotShipRatio
 
 shotSpeed : Vec2
-shotSpeed = { x = 0, y = 0.015 }
+shotSpeed = { x = 0, y = 0.012 }
 
 shotLifetime : Int
-shotLifetime = 35
+shotLifetime = 38
 
 asteroidSpeedBig : Float
 asteroidSpeedBig = 0.001
