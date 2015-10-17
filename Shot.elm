@@ -8,6 +8,7 @@ import Vec2Helpers exposing (..)
 type alias Shot =
   { position : Vec2
   , momentum : Vec2
+  , size : Float
   , tickCount : Int
   }
 
@@ -16,6 +17,7 @@ newShot : Vec2 -> Float -> Shot
 newShot position angle =
   { position = position
   , momentum = rotVec angle Constants.shotSpeed
+  , size = Constants.shotSize
   , tickCount = 0
   }
 

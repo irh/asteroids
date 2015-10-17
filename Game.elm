@@ -11,6 +11,7 @@ import Constants
 import Data.Vec2 exposing (..)
 import Debug
 import Explosion exposing (..)
+import GameObject exposing (..)
 import KeyboardHelpers
 import Random exposing(Seed)
 import RandomHelpers exposing (..)
@@ -208,9 +209,9 @@ shotCollisions game =
     shotCollision shot game' =
       let
         (shot', game'') =
-          objectVsAsteroids shot game' shotVsAsteroid
-          --|> shotVsShip
-          |> shotVsSaucer
+          objectVsAsteroids shot game'
+          |> objectVsObject game'.ship doShipCollision
+          |> objectVsObject game'.saucer (doSaucerCollision True)
       in
         case shot' of
           Just shot'' ->
@@ -225,8 +226,8 @@ shotCollisions game =
       game.shots
 
 
-objectVsAsteroids : a -> Model -> (a -> Asteroid -> Bool) -> (Maybe a, Model)
-objectVsAsteroids object game collisionTest =
+objectVsAsteroids : GameObject a -> Model -> (Maybe (GameObject a), Model)
+objectVsAsteroids object game =
   let
     objectVsAsteroids' (_, asteroidsToCheck, game') =
       case asteroidsToCheck of
@@ -267,75 +268,74 @@ asteroidDestruction asteroid tail game =
     Trampoline.Done (True, [], game')
 
 
-shotVsSaucer : (Maybe Shot, Model) -> (Maybe Shot, Model)
-shotVsSaucer (maybeShot, game) =
-  case maybeShot of
-    Nothing -> (maybeShot, game)
-    Just shot ->
-      case game.saucer of
-        Nothing -> (maybeShot, game)
-        Just saucer ->
-          let collision =
-            shotCollisionTest (saucer.position, saucerSizeForCollisions saucer) shot
-          in
-            if collision then
-              ( Nothing
-              , { game | saucer <- Nothing }
-                |> addExplosion saucer.position
-                |> addScore (saucerScore saucer)
-                |> scheduleSaucer
-              )
-            else (maybeShot, game)
+objectVsObject :
+  Maybe (GameObject b)
+  -> (GameObject a -> GameObject b -> Model -> Model)
+  -> (Maybe (GameObject a), Model)
+  -> (Maybe (GameObject a), Model)
+objectVsObject maybeObjectB collisionFunction (maybeObject, game) =
+  case maybeObject of
+    Nothing -> (maybeObject, game)
+    Just object ->
+      case maybeObjectB of
+        Nothing -> (maybeObject, game)
+        Just objectB ->
+          if collisionTest object objectB then
+            (Nothing, collisionFunction object objectB game)
+          else
+            (maybeObject, game)
 
 
-shotVsShip : (Maybe Shot, Model) -> (Maybe Shot, Model)
-shotVsShip (maybeShot, game) =
-  case maybeShot of
-    Nothing -> (maybeShot, game)
-    Just shot ->
-      case game.ship of
-        Nothing -> (maybeShot, game)
-        Just ship ->
-          if ship.status == Ship.Alive then
-            let collision =
-              shotCollisionTest (ship.position, Constants.shipSizeForCollisions) shot
-            in
-              if collision then
-                ( Nothing
-                , { game
-                  | ship <- Just (killShip ship)
-                  , lives <- game.lives - 1
-                  }
-                  |> addExplosion ship.position
-                )
-              else
-                (maybeShot, game)
-          else (maybeShot, game)
+doShipCollision : GameObject a -> Ship -> Model -> Model
+doShipCollision _ ship game =
+  if ship.status == Ship.Alive then
+    { game
+    | ship <- Just (killShip ship)
+    , lives <- game.lives - 1
+    }
+    |> addExplosion ship.position
+  else game
 
 
-asteroidCollisionTest : (Vec2, Float) -> Asteroid -> Bool
-asteroidCollisionTest test asteroid =
-  circlesOverlap test (asteroid.position, (asteroidSize asteroid))
+doSaucerCollision : Bool -> GameObject a -> Saucer -> Model -> Model
+doSaucerCollision score _ saucer game =
+  { game | saucer <- Nothing }
+  |> addExplosion saucer.position
+  |> addScore (if score then (saucerScore saucer) else 0)
+  |> scheduleSaucer
 
 
-shotVsAsteroid : Shot -> Asteroid -> Bool
-shotVsAsteroid shot asteroid =
-  asteroidCollisionTest (shot.position, Constants.shotSize) asteroid
+doShipSaucerCollision : Ship -> Saucer -> Model -> Model
+doShipSaucerCollision ship saucer game =
+  if ship.status == Ship.Alive then
+    doShipCollision saucer ship game
+    |> doSaucerCollision True ship saucer
+  else game
 
 
-shotCollisionTest : (Vec2, Float) -> Shot -> Bool
-shotCollisionTest test shot =
-  circlesOverlap test (shot.position, Constants.shotSize)
+shipVsSaucer : Model -> Model
+shipVsSaucer game =
+  let
+    (_, game') =
+      (game.ship, game)
+      |> objectVsObject game.saucer doShipSaucerCollision
+  in
+    game'
 
 
-shipVsAsteroid : Ship -> Asteroid -> Bool
-shipVsAsteroid ship asteroid =
-  asteroidCollisionTest (ship.position, Constants.shipSizeForCollisions) asteroid
-
-
-saucerVsAsteroid : Saucer -> Asteroid -> Bool
-saucerVsAsteroid saucer asteroid =
-  asteroidCollisionTest (saucer.position, Constants.shipSizeForCollisions) asteroid
+gameObjectVsAsteroids :
+  Maybe (GameObject a)
+  -> (GameObject a -> GameObject a -> Model -> Model)
+  -> Model
+  -> Model
+gameObjectVsAsteroids maybeObject collisionFunction game =
+  case maybeObject of
+    Nothing -> game
+    Just object ->
+      let (object', game') = objectVsAsteroids object game
+      in case object' of
+        Just _ -> game'
+        Nothing -> collisionFunction object object game'
 
 
 shipVsAsteroids : Model -> Model
@@ -343,63 +343,15 @@ shipVsAsteroids game =
   case game.ship of
     Nothing -> game
     Just ship ->
-      case ship.status of
-        Ship.Alive ->
-          let
-            (ship', game') = objectVsAsteroids ship game shipVsAsteroid
-          in
-            case ship' of
-              Just _ -> game'
-              Nothing ->
-                { game'
-                | ship <- Just (killShip ship)
-                , lives <- game.lives - 1
-                } |> addExplosion ship.position
-        _ -> game
+      if ship.status == Ship.Alive then
+        gameObjectVsAsteroids game.ship doShipCollision game
+      else
+        game
 
 
 saucerVsAsteroids : Model -> Model
 saucerVsAsteroids game =
-  case game.saucer of
-    Nothing -> game
-    Just saucer ->
-      let
-        (saucer', game') = objectVsAsteroids saucer game saucerVsAsteroid
-      in
-        if saucer' == Nothing then
-          { game' | saucer <- Nothing }
-          |> addExplosion saucer.position
-          |> scheduleSaucer
-        else
-          game
-
-
-shipVsSaucer : Model -> Model
-shipVsSaucer game =
-  case game.ship of
-    Nothing -> game
-    Just ship ->
-      if ship.status == Ship.Alive then
-        case game.saucer of
-          Nothing -> game
-          Just saucer ->
-            let
-              collision = circlesOverlap
-                (saucer.position, saucerSize saucer)
-                (ship.position, Constants.shipSizeForCollisions)
-            in
-              if collision then
-                { game
-                | ship <- Just (killShip ship)
-                , lives <- game.lives - 1
-                , saucer <- Nothing
-                }
-                |> addExplosion ship.position
-                |> addExplosion saucer.position
-                |> addScore (saucerScore saucer)
-                |> scheduleSaucer
-              else game
-      else game
+  gameObjectVsAsteroids game.saucer (doSaucerCollision False) game
 
 
 addShot : Model -> Model
@@ -411,7 +363,7 @@ addShot game =
         Ship.Dead -> game
         _ ->
           let
-            shotOffset = Constants.shipSize / 2 + Constants.shotSize / 2
+            shotOffset = ship.size + Constants.shotSize
             shotPosition = rotVec ship.angle { x = 0.0, y = shotOffset }
               |> addVec ship.position
           in

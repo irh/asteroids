@@ -6,7 +6,6 @@ module Saucer
   , tickSaucer
   , maybeFireShot
   , saucerScore
-  , saucerSize
   , saucerSizeForCollisions
   ) where
 
@@ -20,14 +19,15 @@ import Shot exposing (Shot)
 import Vec2Helpers exposing (wrapVec2, randomVec2InBounds, angleBetween)
 
 
-type Size
+type Type
   = Big
   | Small
 
 type alias Saucer =
-  { size : Size
+  { saucerType : Type
   , position : Vec2
   , momentum : Vec2
+  , size : Float
   , tickCount : Int
   , tickNextDirectionChange : Int
   , shotAccuracy : Float
@@ -36,10 +36,11 @@ type alias Saucer =
 
 defaultSaucer : Saucer
 defaultSaucer =
-  { size = Small
-  , tickCount = 0
+  { saucerType = Small
   , position = origin
   , momentum = origin
+  , size = 0
+  , tickCount = 0
   , tickNextDirectionChange = -1
   , shotAccuracy = 0
   }
@@ -49,13 +50,15 @@ newSaucer : Int -> Seed -> (Saucer, Seed)
 newSaucer score seed =
   let
     (select, seed') = randomInt 0 2 seed
+    saucerType = if score >= 10000 || select == 0 then Small else Big
     size =
-      if score >= 10000 || select == 0 then Small else Big
+      if saucerType == Small then Constants.saucerSizeSmall else Constants.saucerSizeBig
     difficulty = min 1.0 ((toFloat score) / (toFloat Constants.maxDifficultyScore))
     shotAccuracy = interpolate Constants.saucerShotAccuracyRange difficulty
     saucer =
       { defaultSaucer
-      | size <- size
+      | saucerType <- saucerType
+      , size <- size
       , shotAccuracy <- shotAccuracy
       }
   in
@@ -174,7 +177,7 @@ maybeFireShot saucer ship seed =
   if saucer.tickCount % Constants.saucerShotTicks == 0 then
     let
       (angle, seed') = shotAngle saucer ship seed
-      shotOffset = (saucerSize saucer) / 2 + Constants.shotSize
+      shotOffset = saucer.size + Constants.shotSize
       shotPosition =
         rotVec angle { x = 0.0, y = shotOffset }
         |> addVec saucer.position
@@ -186,7 +189,7 @@ maybeFireShot saucer ship seed =
 
 shotAngle : Saucer -> Maybe Ship -> Seed -> (Float, Seed)
 shotAngle saucer maybeShip seed =
-  case saucer.size of
+  case saucer.saucerType of
     Big -> randomAngle seed
     Small ->
       case maybeShip of
@@ -206,21 +209,11 @@ shotAngle saucer maybeShip seed =
 
 saucerScore : Saucer -> Int
 saucerScore saucer =
-  case saucer.size of
+  case saucer.saucerType of
     Big -> Constants.saucerScoreBig
     Small -> Constants.saucerScoreSmall
 
 
-saucerSize : Saucer -> Float
-saucerSize saucer =
-  case saucer.size of
-    Big -> Constants.saucerSizeBig
-    Small -> Constants.saucerSizeSmall
-
-
 saucerSizeForCollisions : Saucer -> Float
 saucerSizeForCollisions saucer =
-  Constants.saucerSizeCollisionRatio
-    * case saucer.size of
-        Big -> Constants.saucerSizeBig
-        Small -> Constants.saucerSizeSmall
+  Constants.saucerSizeCollisionRatio * saucer.size

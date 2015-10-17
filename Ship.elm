@@ -13,6 +13,7 @@ module Ship
 import Constants
 import Data.Vec2 exposing (..)
 import Debug
+import GameObject exposing (GameObject)
 import KeyboardHelpers
 import Random exposing (Seed)
 import Vec2Helpers exposing (wrapVec2, randomVec2InBounds)
@@ -27,12 +28,12 @@ type Status
 type alias Ship =
   { status : Status
   , tickCount : Int
-  , position : Vec2
-  , momentum : Vec2
   , angle : Float
   , thrust : Bool
+  , position : Vec2
+  , momentum : Vec2
+  , size : Float
   }
-
 
 defaultShip : Ship
 defaultShip =
@@ -40,6 +41,7 @@ defaultShip =
   , tickCount = 0
   , position = origin
   , momentum = origin
+  , size = Constants.shipSizeForCollisions
   , angle = 0.0
   , thrust = False
   }

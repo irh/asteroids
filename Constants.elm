@@ -66,7 +66,7 @@ spaceFriction : Float
 spaceFriction = 0.99
 
 maxMomentum : Float
-maxMomentum = 0.0125
+maxMomentum = 0.009
 
 invincibleShipTime : Int
 invincibleShipTime = 100

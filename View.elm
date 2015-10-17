@@ -154,9 +154,9 @@ renderSaucer maybeSaucer factor =
     Nothing -> group []
     Just saucer ->
       let
-        shipSize = (Saucer.saucerSize saucer) * factor
-        shipTransform = (\path ->
-          scalePath path shipSize
+        saucerSize = saucer.size * factor
+        saucerTransform = (\path ->
+          scalePath path saucerSize
           |> outlined shipLineStyle
           )
         outlinePath =
@@ -169,7 +169,7 @@ renderSaucer maybeSaucer factor =
           , (0.2, -0.2)
           , (-0.2, -0.2)
           ]
-        saucerShapes = List.map shipTransform
+        saucerShapes = List.map saucerTransform
           [ outlinePath
           , [(-0.5, 0), (0.5, 0)]
           , [(-0.1667, 0.23), (0.1667, 0.23)]
@@ -198,10 +198,7 @@ renderShot shot factor =
 renderAsteroid : Asteroid -> Float -> Form
 renderAsteroid asteroid factor =
   let
-    size = factor * case asteroid.size of
-      Asteroid.Big -> Constants.asteroidSizeBig
-      Asteroid.Medium -> Constants.asteroidSizeMedium
-      Asteroid.Small -> Constants.asteroidSizeSmall
+    size = factor * asteroid.size
   in
     scalePath (asteroidPath asteroid) size
     |> outlined asteroidLineStyle

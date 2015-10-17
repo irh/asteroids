@@ -31,21 +31,23 @@ type Kind
 
 
 type alias Asteroid =
-  { size : Size
+  { sizeClass : Size
+  , kind : Kind
   , position : Vec2
   , momentum : Vec2
+  , size : Float
   , angle : Float
-  , kind : Kind
   }
 
 
 defaultAsteroid : Asteroid
 defaultAsteroid =
-  { size = Big
+  { sizeClass = Big
+  , size = asteroidSize Big
+  , kind = A
   , position = origin
   , momentum = origin
   , angle = 0
-  , kind = A
   }
 
 
@@ -78,7 +80,8 @@ randomAsteroid seed =
     (position, seed'') = randomVec2InBounds seed' Constants.gameBounds
     asteroid =
       { defaultAsteroid
-      | size <- size
+      | sizeClass <- size
+      , size <- asteroidSize size
       , position <- position
       }
   in
@@ -117,7 +120,7 @@ randomAngle (asteroid, seed) =
 randomMomentum : (Asteroid, Seed) -> (Asteroid, Seed)
 randomMomentum (asteroid, seed) =
   let
-    (momentum, seed') = newMomentum asteroid.size seed
+    (momentum, seed') = newMomentum asteroid.sizeClass seed
   in
     ({asteroid | momentum <- momentum}, seed')
 
@@ -141,7 +144,7 @@ newMomentum size seed =
 
 destroyAsteroid : Asteroid -> Seed -> Maybe (Asteroid, Asteroid, Seed)
 destroyAsteroid asteroid seed =
-  case asteroid.size of
+  case asteroid.sizeClass of
     Big -> Just (splitAsteroid asteroid Medium seed)
     Medium -> Just (splitAsteroid asteroid Small seed)
     Small -> Nothing
@@ -150,7 +153,11 @@ destroyAsteroid asteroid seed =
 splitAsteroid : Asteroid -> Size -> Seed -> (Asteroid, Asteroid, Seed)
 splitAsteroid asteroid size seed =
   let
-    newAsteroid = { asteroid | size <- size }
+    newAsteroid =
+      { asteroid
+      | sizeClass <- size
+      , size <- asteroidSize size
+      }
     (a, seed') = (newAsteroid, seed) |> randomizeNewAsteroidProperties
     (b, seed'') = (newAsteroid, seed') |> randomizeNewAsteroidProperties
   in
@@ -165,9 +172,9 @@ splitAsteroids asteroids seed =
   (asteroids, seed)
 
 
-asteroidSize : Asteroid -> Float
-asteroidSize asteroid =
-  case asteroid.size of
+asteroidSize : Size -> Float
+asteroidSize size =
+  case size of
     Big -> Constants.asteroidSizeBig
     Medium -> Constants.asteroidSizeMedium
     Small -> Constants.asteroidSizeSmall
@@ -175,7 +182,7 @@ asteroidSize asteroid =
 
 asteroidScore : Asteroid -> Int
 asteroidScore asteroid =
-  case asteroid.size of
+  case asteroid.sizeClass of
     Big -> Constants.asteroidScoreBig
     Medium -> Constants.asteroidScoreMedium
     Small -> Constants.asteroidScoreSmall
