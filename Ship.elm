@@ -76,16 +76,19 @@ goIntoHyperspace maybeShip seed =
   case maybeShip of
     Nothing -> (Nothing, seed)
     Just ship ->
-      let
-        (position, seed') = randomVec2InBounds seed Constants.gameBounds
-        ship' =
-          { ship
-          | status <- Hyperspace
-          , position <- position
-          , momentum <- origin
-          , tickCount <- 0
-          }
-      in (Just ship', seed')
+      case ship.status of
+        Alive ->
+          let
+            (position, seed') = randomVec2InBounds seed Constants.gameBounds
+            ship' =
+              { ship
+              | status <- Hyperspace
+              , position <- position
+              , momentum <- origin
+              , tickCount <- 0
+              }
+          in (Just ship', seed')
+        _ -> (Just ship, seed)
 
 
 tickShipState : Maybe Ship -> Maybe Ship

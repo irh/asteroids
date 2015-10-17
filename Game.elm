@@ -28,7 +28,6 @@ type Update
   | Tick Float
   | Space Bool
   | Escape Bool
-  | Shift Bool
   | StartTime Float
 
 type Mode
@@ -125,8 +124,8 @@ newLevel game =
 updateGame : Update -> Model -> Model
 updateGame input game =
   case input of
-    Arrows arrows -> { game | arrows <- arrows }
-    Wasd wasd -> { game | arrows <- wasd }
+    Arrows arrows -> updateArrows game arrows
+    Wasd wasd -> updateArrows game wasd
     Tick _ -> tickGame game
     Space down ->
       case game.mode of
@@ -139,9 +138,15 @@ updateGame input game =
           Pause -> changeGameMode game
           _ -> game
       else game
-    Shift down ->
-      if down then hyperspace game else game
     _ -> game
+
+
+updateArrows : Model -> { x : Int, y : Int } -> Model
+updateArrows game arrows =
+  if arrows.y < 0 then
+    hyperspace game
+  else
+    { game | arrows <- arrows }
 
 
 changeGameMode : Model -> Model
