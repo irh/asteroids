@@ -129,7 +129,7 @@ updateGame input game =
     Tick _ -> tickGame game
     Space down ->
       case game.mode of
-        Play -> if down then addShot game else game
+        Play -> if down then fireShot game else game
         _ -> changeGameMode game
     Escape down ->
       if down then
@@ -359,22 +359,14 @@ saucerVsAsteroids game =
   gameObjectVsAsteroids game.saucer (doSaucerCollision False) game
 
 
-addShot : Model -> Model
-addShot game =
-  case game.ship of
+fireShot : Model -> Model
+fireShot game =
+  case Ship.fireShot game.ship of
     Nothing -> game
-    Just ship ->
-      case ship.status of
-        Ship.Dead -> game
-        _ ->
-          let
-            shotOffset = ship.size + Constants.shotSize
-            shotPosition = rotVec ship.angle { x = 0.0, y = shotOffset }
-              |> addVec ship.position
-          in
-            { game
-            | shots <- (newShot shotPosition ship.angle) :: game.shots
-            }
+    Just shot ->
+      { game
+      | shots <- shot :: game.shots
+      }
 
 
 addExplosion : Vec2 -> Model -> Model

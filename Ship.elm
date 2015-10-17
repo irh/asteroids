@@ -8,6 +8,7 @@ module Ship
   , killShip
   , tickShipState
   , goIntoHyperspace
+  , fireShot
   ) where
 
 import Constants
@@ -16,6 +17,7 @@ import Debug
 import GameObject exposing (GameObject)
 import KeyboardHelpers
 import Random exposing (Seed)
+import Shot exposing (Shot)
 import Vec2Helpers exposing (wrapVec2, randomVec2InBounds)
 
 
@@ -177,4 +179,20 @@ applyThrust momentum angle =
     else
       momentum'
 
+
+fireShot : Maybe Ship -> Maybe Shot
+fireShot maybeShip =
+  case maybeShip of
+    Nothing -> Nothing
+    Just ship ->
+      case ship.status of
+        Dead -> Nothing
+        Hyperspace -> Nothing
+        _ ->
+          let
+            shotOffset = ship.size + Constants.shotSize
+            shotPosition = rotVec ship.angle { x = 0.0, y = shotOffset }
+              |> addVec ship.position
+          in
+            Just (Shot.newShot shotPosition ship.angle)
 
