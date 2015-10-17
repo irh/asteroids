@@ -136,10 +136,20 @@ tickAsteroid asteroid =
 
 newMomentum : Size -> Seed -> (Vec2, Seed)
 newMomentum size seed =
-  case size of
-    Big -> randomVec2 seed -Constants.asteroidSpeedBig Constants.asteroidSpeedBig
-    Medium -> randomVec2 seed -Constants.asteroidSpeedMedium Constants.asteroidSpeedMedium
-    Small -> randomVec2 seed -Constants.asteroidSpeedSmall Constants.asteroidSpeedSmall
+  let
+    (momentum, seed') =
+      case size of
+        Big -> randomVec2 seed -Constants.asteroidSpeedBig Constants.asteroidSpeedBig
+        Medium -> randomVec2 seed -Constants.asteroidSpeedMedium Constants.asteroidSpeedMedium
+        Small -> randomVec2 seed -Constants.asteroidSpeedSmall Constants.asteroidSpeedSmall
+    mag = magnitude momentum
+    momentum' =
+      if mag < Constants.asteroidSpeedMin then
+        scaleVec (Constants.asteroidSpeedMin / mag) momentum
+      else
+        momentum
+  in (momentum', seed')
+
 
 
 destroyAsteroid : Asteroid -> Seed -> Maybe (Asteroid, Asteroid, Seed)

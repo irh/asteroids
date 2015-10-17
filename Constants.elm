@@ -92,6 +92,9 @@ shotSpeed = { x = 0, y = 0.012 }
 shotLifetime : Int
 shotLifetime = 38
 
+asteroidSpeedMin : Float
+asteroidSpeedMin = 0.0005
+
 asteroidSpeedBig : Float
 asteroidSpeedBig = 0.001
 
