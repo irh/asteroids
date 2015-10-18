@@ -50,6 +50,7 @@ type alias Model =
   , lives : Int
   , tickCount : Int
   , nextSaucerTickCount : Int
+  , nextLevelTickCount : Int
   , seed : Seed
   }
 
@@ -68,6 +69,7 @@ defaultGame =
   , lives = 0
   , tickCount = 0
   , nextSaucerTickCount = 0
+  , nextLevelTickCount = 0
   , seed = Random.initialSeed 0
   }
 
@@ -76,22 +78,28 @@ intro : Update -> Model
 intro input =
   case input of
     StartTime time ->
-      let
-        seed = Random.initialSeed (round time)
-        (asteroids, seed') =
-          Random.generate
-            (Random.list Constants.introAsteroidCount
-              <| Random.customGenerator Asteroid.randomAsteroid)
-            seed
-        (saucer, seed'') = newSaucer 0 seed'
-      in
-        { defaultGame
-        | mode <- Intro
-        , asteroids <- asteroids
-        , saucer <- Just saucer
-        , seed <- seed''
-        }
+      { defaultGame
+      | seed <- Random.initialSeed (round time)
+      } |> newIntro
     _ -> defaultGame
+
+
+newIntro : Model -> Model
+newIntro game =
+  let
+    (asteroids, seed) =
+      Random.generate
+        (Random.list Constants.introAsteroidCount
+          <| Random.customGenerator Asteroid.randomAsteroid)
+        game.seed
+    (saucer, seed') = newSaucer 0 seed
+  in
+    { defaultGame
+    | mode <- Intro
+    , asteroids <- asteroids
+    , saucer <- Just saucer
+    , seed <- seed'
+    }
 
 
 newGame : Model -> Model
@@ -117,6 +125,7 @@ newLevel game =
     , seed <- seed'
     , level <- game.level + 1
     , tickCount <- 0
+    , nextLevelTickCount <- 0
     , saucer <- Nothing
     } |> scheduleSaucer
 
@@ -171,6 +180,7 @@ tickGame game =
 tickPlay : Model -> Model
 tickPlay game =
   { game | tickCount <- game.tickCount + 1 }
+  |> checkForNewLevel
   |> moveGameItems
   |> checkForOutOfBoundsSaucer
   |> shotCollisions
@@ -180,7 +190,7 @@ tickPlay game =
   |> tickExplosions
   |> tickShipState
   |> tickSaucer
-  |> checkForNewLevel
+  |> scheduleNewLevel
   |> checkForGameOver
 
 
@@ -196,17 +206,31 @@ moveGameItems game =
 
 checkForNewLevel : Model -> Model
 checkForNewLevel game =
-  case game.asteroids of
-    [] -> newLevel game
-    _ -> game
+  if game.tickCount == game.nextLevelTickCount then
+    case game.mode of
+      Intro -> newIntro game
+      _ -> newLevel game
+  else game
+
+
+scheduleNewLevel : Model -> Model
+scheduleNewLevel game =
+  if game.asteroids == []
+     && game.saucer == Nothing
+     && game.nextLevelTickCount < game.tickCount
+  then
+    { game
+    | nextLevelTickCount <- game.tickCount + Constants.nextLevelDelayTicks
+    , nextSaucerTickCount <- 0
+    }
+  else game
 
 
 checkForGameOver : Model -> Model
 checkForGameOver game =
   if game.mode /= Intro && game.ship == Nothing then
     { game | mode <- GameOver }
-  else
-    game
+  else game
 
 
 checkForOutOfBoundsSaucer : Model -> Model
@@ -220,8 +244,7 @@ checkForOutOfBoundsSaucer game =
       in
         if outOfBounds then
           { game | saucer <- Nothing } |> scheduleSaucer
-        else
-          game
+        else game
 
 
 shotCollisions : Model -> Model
@@ -366,8 +389,7 @@ shipVsAsteroids game =
     Just ship ->
       if ship.status == Ship.Alive then
         gameObjectVsAsteroids game.ship doShipCollision game
-      else
-        game
+      else game
 
 
 saucerVsAsteroids : Model -> Model
@@ -476,5 +498,4 @@ hyperspace game =
       (ship, seed) = goIntoHyperspace game.ship game.seed
     in
       { game | ship <- ship, seed <- seed }
-  else
-    game
+  else game

@@ -38,6 +38,9 @@ startAsteroidCount = 8
 introAsteroidCount : Int
 introAsteroidCount = 30
 
+nextLevelDelayTicks : Int
+nextLevelDelayTicks = 120
+
 shipSize : Float
 shipSize = 0.03
 
