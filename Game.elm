@@ -172,6 +172,7 @@ tickPlay : Model -> Model
 tickPlay game =
   { game | tickCount <- game.tickCount + 1 }
   |> moveGameItems
+  |> checkForOutOfBoundsSaucer
   |> shotCollisions
   |> shipVsSaucer
   |> shipVsAsteroids
@@ -206,6 +207,21 @@ checkForGameOver game =
     { game | mode <- GameOver }
   else
     game
+
+
+checkForOutOfBoundsSaucer : Model -> Model
+checkForOutOfBoundsSaucer game =
+  case game.saucer of
+    Nothing -> game
+    Just saucer ->
+      let outOfBounds =
+        saucer.position.x < Constants.gameBoundsMinX
+        || saucer.position.x > Constants.gameBoundsMaxX
+      in
+        if outOfBounds then
+          { game | saucer <- Nothing } |> scheduleSaucer
+        else
+          game
 
 
 shotCollisions : Model -> Model

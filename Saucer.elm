@@ -138,10 +138,9 @@ moveSaucer maybeSaucer =
           if | position.y > Constants.gameBoundsMaxY -> Constants.gameBoundsMinY
              | position.y < Constants.gameBoundsMinY -> Constants.gameBoundsMaxY
              | otherwise -> position.y
-        outOfBounds =
-          position.x < Constants.gameBoundsMinX || position.x > Constants.gameBoundsMaxX
+        positionWrapped = { position | y <- wrappedY }
       in
-        if outOfBounds then Nothing else Just { saucer | position <- position }
+        Just { saucer | position <- positionWrapped }
 
 
 tickSaucer : Saucer -> Seed -> (Saucer, Seed)
