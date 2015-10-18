@@ -6,7 +6,7 @@ module Saucer
   , tickSaucer
   , maybeFireShot
   , saucerScore
-  , saucerSizeForCollisions
+  , saucerSizeForView
   ) where
 
 import Constants
@@ -51,8 +51,11 @@ newSaucer score seed =
   let
     (select, seed') = randomInt 0 2 seed
     saucerType = if score >= 10000 || select == 0 then Small else Big
-    size =
-      if saucerType == Small then Constants.saucerSizeSmall else Constants.saucerSizeBig
+    size = Constants.saucerSizeCollisionRatio *
+      if saucerType == Small then
+        Constants.saucerSizeSmall
+      else
+        Constants.saucerSizeBig
     difficulty = min 1.0 ((toFloat score) / (toFloat Constants.maxDifficultyScore))
     shotAccuracy = interpolate Constants.saucerShotAccuracyRange difficulty
     saucer =
@@ -213,6 +216,6 @@ saucerScore saucer =
     Small -> Constants.saucerScoreSmall
 
 
-saucerSizeForCollisions : Saucer -> Float
-saucerSizeForCollisions saucer =
-  Constants.saucerSizeCollisionRatio * saucer.size
+saucerSizeForView : Saucer -> Float
+saucerSizeForView saucer =
+  saucer.size / Constants.saucerSizeCollisionRatio

@@ -154,7 +154,7 @@ renderSaucer maybeSaucer factor =
     Nothing -> group []
     Just saucer ->
       let
-        saucerSize = saucer.size * factor
+        saucerSize = (Saucer.saucerSizeForView saucer) * factor
         saucerTransform = (\path ->
           scalePath path saucerSize
           |> outlined shipLineStyle
