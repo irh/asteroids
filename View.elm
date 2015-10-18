@@ -385,6 +385,12 @@ textSize string style =
     (toFloat (widthOf text), toFloat (heightOf text))
 
 
+textHeight : Text.Style -> Float
+textHeight style =
+  let (_, height) = textSize "_" style
+  in height
+
+
 scoreText : Int -> Float -> Float -> Float -> Form
 scoreText score width height factor =
   let
@@ -398,23 +404,54 @@ scoreText score width height factor =
     |> move (xOffset, yOffset)
 
 
+introText =
+  [ "ASTEROIDS"
+  , ""
+  , "UP - THRUST"
+  , "DOWN - HYPERSPACE"
+  , "LEFT/RIGHT - TURN"
+  , "SPACE - FIRE"
+  , "ESC - PAUSE"
+  , ""
+  , "PRESS SPACE TO PLAY"
+  , ""
+  , "irh.github.io/asteroids"
+  ]
+
+pauseText =
+  [ "PAUSED"
+  , ""
+  , "PRESS SPACE TO CONTINUE"
+  , "PRESS ESC TO QUIT"
+  ]
+
+gameOverText =
+  [ "GAME OVER"
+  , ""
+  , "PRESS SPACE TO PLAY AGAIN"
+  ]
+
+
 renderGameText : Game.Mode -> Float -> Form
 renderGameText mode factor =
   if mode == Game.Play then group []
   else
     let
       style = textStyle textColor (Constants.gameTextHeight * factor)
-      (first, second) = case mode of
-        Game.Intro -> ("ASTEROIDS", "PRESS SPACE TO PLAY")
-        Game.Pause -> ("PAUSED", "PRESS SPACE TO CONTINUE")
-        Game.GameOver -> ("GAME OVER", "PRESS SPACE TO PLAY AGAIN")
-        _ -> ("", "")
-      (_, textHeight) = textSize "_" style
-      yOffset = textHeight / 2 + Constants.gameTextHeight * factor / 5
-      line1 = styledText style first
-      line2 = styledText style second
+      lines = case mode of
+        Game.Intro -> introText
+        Game.Pause -> pauseText
+        Game.GameOver -> gameOverText
+        _ -> []
+      lineCount = List.length lines
+      centerLine = (toFloat lineCount - 1) / 2.0
+      yOffset = (textHeight style) + Constants.gameTextHeight * factor / 5
+      renderLine = (\index text ->
+        let
+          line = styledText style text
+          lineOffset = ((toFloat index) - centerLine) * -yOffset
+        in
+          line |> move (0, lineOffset)
+        )
     in
-      group [ line1 |> move (0, yOffset)
-            , line2 |> move (0, -yOffset)
-            ]
-
+      group <| List.indexedMap renderLine lines
