@@ -181,18 +181,9 @@ renderSaucer maybeSaucer factor =
 
 renderShot : Shot -> Float -> Form
 renderShot shot factor =
-  let
-    renderShotLine = (\path ->
-      scalePath path (Constants.shipSize * factor)
-      |> traced shipLineStyle
-      )
-    shotLines =
-      [ (segment (-shotRadius, 0) (shotRadius, 0))
-      , (segment (0, -shotRadius) (0, shotRadius))
-      ]
-  in
-    group (List.map renderShotLine shotLines)
-    |> move (scaleTuple (asTuple shot.position) factor)
+  square (shotRadius * Constants.shipSize * factor)
+  |> filled shipColor
+  |> move (scaleTuple (asTuple shot.position) factor)
 
 
 renderAsteroid : Asteroid -> Float -> Form
