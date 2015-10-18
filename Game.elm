@@ -80,7 +80,7 @@ intro input =
         seed = Random.initialSeed (round time)
         (asteroids, seed') =
           Random.generate
-            (Random.list Constants.newGameAsteroidCount
+            (Random.list Constants.introAsteroidCount
               <| Random.customGenerator Asteroid.randomAsteroid)
             seed
         (saucer, seed'') = newSaucer 0 seed'

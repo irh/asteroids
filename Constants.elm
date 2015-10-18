@@ -6,7 +6,7 @@ gameWidth : Float
 gameWidth = 1.0
 
 gameHeight : Float
-gameHeight = 2.0 / 3.0
+gameHeight = 3.0 / 4.0
 
 gameBoundsMinX = -gameWidth / 2
 gameBoundsMaxX = gameWidth / 2
@@ -33,10 +33,10 @@ extraLifeMultiple : Int
 extraLifeMultiple = 10000
 
 startAsteroidCount : Int
-startAsteroidCount = 5
+startAsteroidCount = 8
 
-newGameAsteroidCount : Int
-newGameAsteroidCount = 30
+introAsteroidCount : Int
+introAsteroidCount = 30
 
 shipSize : Float
 shipSize = 0.03
@@ -90,7 +90,7 @@ shotSpeed : Vec2
 shotSpeed = { x = 0, y = 0.012 }
 
 shotLifetime : Int
-shotLifetime = 38
+shotLifetime = 40
 
 asteroidSpeedMin : Float
 asteroidSpeedMin = 0.0005
