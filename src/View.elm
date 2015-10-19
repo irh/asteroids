@@ -394,7 +394,9 @@ scoreText score width height factor =
 
 
 introText =
-  [ "ASTEROIDS"
+  [ "---------"
+  , "ASTEROIDS"
+  , "---------"
   , ""
   , "UP - THRUST"
   , "DOWN - HYPERSPACE"
@@ -403,8 +405,6 @@ introText =
   , "ESC - PAUSE"
   , ""
   , "PRESS SPACE TO PLAY"
-  , ""
-  , "irh.github.io/asteroids"
   ]
 
 pauseText =
