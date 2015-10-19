@@ -60,8 +60,13 @@ newSaucer score saucerCount seed =
         Constants.saucerSizeSmall
       else
         Constants.saucerSizeBig
-    difficulty = min 1.0 ((toFloat score) / (toFloat Constants.maxDifficultyScore))
-    shotAccuracy = interpolate Constants.saucerShotAccuracyRange difficulty
+    shotAccuracy =
+      if saucerType == Small then
+        let
+          difficulty = min 1.0 ((toFloat score) / (toFloat Constants.maxDifficultyScore))
+        in
+          interpolate Constants.saucerShotAccuracyRange difficulty
+      else 0
     saucer =
       { defaultSaucer
       | saucerType <- saucerType
@@ -195,22 +200,19 @@ maybeFireShot saucer ship seed =
 
 shotAngle : Saucer -> Maybe Ship -> Seed -> (Float, Seed)
 shotAngle saucer maybeShip seed =
-  case saucer.saucerType of
-    Big -> randomAngle seed
-    Small ->
-      case maybeShip of
-        Just ship ->
-          case ship.status of
-            Ship.Dead -> randomAngle seed
-            Ship.Hyperspace -> randomAngle seed
-            _ ->
-              let
-                angle = pi - angleBetween ship.position saucer.position
-                spread = pi * (1.0 - saucer.shotAccuracy)
-                (jitter, seed') = randomFloat -spread spread seed
-              in
-                (angle + jitter, seed')
-        Nothing -> randomAngle seed
+  case maybeShip of
+    Just ship ->
+      case ship.status of
+        Ship.Dead -> randomAngle seed
+        Ship.Hyperspace -> randomAngle seed
+        _ ->
+          let
+            angle = pi - angleBetween ship.position saucer.position
+            spread = pi * (1.0 - saucer.shotAccuracy)
+            (jitter, seed') = randomFloat -spread spread seed
+          in
+            (angle + jitter, seed')
+    Nothing -> randomAngle seed
 
 
 saucerScore : Saucer -> Int
