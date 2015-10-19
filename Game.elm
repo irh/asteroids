@@ -144,7 +144,7 @@ updateGame input game =
       if down then
         case game.mode of
           Play -> changeGameMode game
-          Pause -> changeGameMode game
+          Pause -> quitGame game
           _ -> game
       else game
     _ -> game
@@ -224,6 +224,15 @@ scheduleNewLevel game =
     , nextSaucerTickCount <- 0
     }
   else game
+
+
+quitGame : Model -> Model
+quitGame game =
+  { game
+  | mode <- GameOver
+  , ship <- Nothing
+  , lives <- 0
+  }
 
 
 checkForGameOver : Model -> Model
