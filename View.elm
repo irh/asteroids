@@ -113,18 +113,20 @@ renderShipDebris ship factor =
     progress = (toFloat ship.tickCount) / (toFloat Constants.deadShipTicks) + 0.5
     shipSize = Constants.shipSize * factor
     debrisSize = progress * Constants.shipDebrisSize * factor
-    renderDebris (lineSize, angle, moveAngle, yOffset) =
+    renderDebris (lineSize, angle, moveAngle, xOffset, yOffset) =
       segment
         (scaleTuple (0, -0.5) (lineSize * shipSize))
         (scaleTuple (0, 0.5) (lineSize * shipSize))
       |> traced shipLineStyle
       |> rotate angle
-      |> move (0, yOffset * shipSize)
+      |> move (xOffset * shipSize, yOffset * shipSize)
       |> move (asTuple (rotVec moveAngle { x = 0, y = debrisSize }))
     debris = List.map renderDebris
-      [ (1.0, pi / 8, -pi / 6, -0.25)
-      , (1.0, -pi / 8, pi / 6, -0.25)
-      , (0.5, pi / 2, pi, 0)
+      [ (0.45, pi / 8, -pi / 6, -0.05, 0.15)
+      , (0.5, pi / 12, -pi / 3, -0.05, -0.35)
+      , (0.5, -pi / 8, pi / 6, 0.05, 0.15)
+      , (0.45, -pi / 12, pi / 3, 0.05, -0.35)
+      , (0.4, pi / 2, pi, 0, 0.0)
       ]
   in
     group debris
