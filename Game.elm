@@ -19,7 +19,6 @@ import Ship exposing (..)
 import Shot exposing (..)
 import Saucer exposing (..)
 import Trampoline
-import Vec2Helpers exposing (..)
 
 
 type Update

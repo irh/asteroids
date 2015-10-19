@@ -14,7 +14,6 @@ import Constants
 import Data.Vec2 exposing (..)
 import Random exposing (Seed)
 import RandomHelpers exposing (..)
-import Trampoline
 import Vec2Helpers exposing (..)
 
 

@@ -13,8 +13,6 @@ module Ship
 
 import Constants
 import Data.Vec2 exposing (..)
-import Debug
-import GameObject exposing (GameObject)
 import KeyboardHelpers
 import Random exposing (Seed)
 import Shot exposing (Shot)

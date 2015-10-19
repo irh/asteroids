@@ -11,7 +11,6 @@ module Saucer
 
 import Constants
 import Data.Vec2 exposing (..)
-import Debug
 import Random exposing (Seed)
 import RandomHelpers exposing (..)
 import Ship exposing (Ship)

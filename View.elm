@@ -13,15 +13,12 @@ import Ship exposing (Ship)
 import Shot exposing (Shot)
 import Saucer exposing (Saucer)
 import Text
-import Window
 
 
 backgroundColor = rgb 0 0 0
 borderColor = rgb 255 255 255
 shipColor = rgb 255 255 255
 asteroidColor = rgb 255 255 255
-
-
 
 
 view : (Int, Int) -> Game.Model -> Element
