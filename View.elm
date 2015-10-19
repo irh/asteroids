@@ -64,7 +64,7 @@ flameX = crossBarX * 0.75
 flameOffset = shipHeight / 4.0
 flameY = crossBarY - flameOffset
 flameY2 = -shipHeight - flameOffset
-shotRadius = shipHeight * Constants.shotShipRatio
+shotRadius = 0.15
 
 
 renderObjects : List a -> (a -> Float -> Form) -> Float -> Form
@@ -249,16 +249,6 @@ thrustPath =
   , (flameX, flameY)
   , (0, flameY2)
   , (-flameX, flameY)
-  ]
-
-
-shotPath : Path
-shotPath =
-  [ (-shotRadius, 0)
-  , (0, shotRadius)
-  , (shotRadius, 0)
-  , (0, -shotRadius)
-  , (-shotRadius, 0)
   ]
 
 

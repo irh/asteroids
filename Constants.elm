@@ -83,11 +83,8 @@ deadShipTime = 120
 deadShipMomentumChange : Float
 deadShipMomentumChange = 0.4
 
-shotShipRatio : Float
-shotShipRatio = 0.2
-
 shotSize : Float
-shotSize = shipSize * shotShipRatio
+shotSize = shipSize * 0.2
 
 shotSpeed : Vec2
 shotSpeed = { x = 0, y = 0.012 }
