@@ -46,11 +46,15 @@ defaultSaucer =
   }
 
 
-newSaucer : Int -> Seed -> (Saucer, Seed)
-newSaucer score seed =
+newSaucer : Int -> Int -> Seed -> (Saucer, Seed)
+newSaucer score saucerCount seed =
   let
-    (select, seed') = randomInt 0 2 seed
-    saucerType = if score >= 10000 || select == 0 then Small else Big
+    (select, seed') = randomInt 0 3 seed
+    saucerType =
+      if | saucerCount <= Constants.initialBigSaucerCount -> Big
+         | score >= 10000 -> Small
+         | select == 0 -> Small
+         | otherwise -> Big
     size = Constants.saucerSizeCollisionRatio *
       if saucerType == Small then
         Constants.saucerSizeSmall

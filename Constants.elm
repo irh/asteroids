@@ -168,13 +168,16 @@ saucerScoreSmall : Int
 saucerScoreSmall = 1000
 
 saucerShotAccuracyRange : (Float, Float)
-saucerShotAccuracyRange = (0.93, 0.999)
+saucerShotAccuracyRange = (0.75, 0.999)
 
 saucerTicksMin : Int
 saucerTicksMin = 300
 
 saucerTicksMax : Int
 saucerTicksMax = 1000
+
+initialBigSaucerCount : Int
+initialBigSaucerCount = 3
 
 maxDifficultyScore : Int
 maxDifficultyScore = 40000

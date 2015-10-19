@@ -51,6 +51,7 @@ type alias Model =
   , tickCount : Int
   , nextSaucerTickCount : Int
   , nextLevelTickCount : Int
+  , saucerCount : Int
   , seed : Seed
   }
 
@@ -70,6 +71,7 @@ defaultGame =
   , tickCount = 0
   , nextSaucerTickCount = 0
   , nextLevelTickCount = 0
+  , saucerCount = 0
   , seed = Random.initialSeed 0
   }
 
@@ -92,7 +94,7 @@ newIntro game =
         (Random.list Constants.introAsteroidCount
           <| Random.customGenerator Asteroid.randomAsteroid)
         game.seed
-    (saucer, seed') = newSaucer 0 seed
+    (saucer, seed') = newSaucer 0 (Constants.initialBigSaucerCount + 1) seed
   in
     { defaultGame
     | mode <- Intro
@@ -464,10 +466,11 @@ tickSaucer game =
     Nothing ->
       if game.tickCount == game.nextSaucerTickCount then
         let
-          (saucer, seed) = newSaucer game.score game.seed
+          (saucer, seed) = newSaucer game.score game.saucerCount game.seed
         in
           { game
           | saucer <- Just saucer
+          , saucerCount <- game.saucerCount + 1
           , seed <- seed
           } |> scheduleSaucer
       else game
