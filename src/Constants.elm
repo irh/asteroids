@@ -31,7 +31,7 @@ gameTextHeight = shipSize
 scoreTextHeight = shipSize
 
 turningSpeed = 0.075
-thrust = { x = 0, y = 0.00011 }
+thrust = { x = 0, y = 0.00009 }
 spaceFriction = 0.992
 maxMomentum = 0.009
 
