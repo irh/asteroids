@@ -113,7 +113,7 @@ renderLiveShip ship factor =
 renderShipDebris : Ship -> Float -> Form
 renderShipDebris ship factor =
   let
-    progress = (toFloat ship.tickCount) / (toFloat Constants.deadShipTime) + 0.5
+    progress = (toFloat ship.tickCount) / (toFloat Constants.deadShipTicks) + 0.5
     shipSize = Constants.shipSize * factor
     debrisSize = progress * Constants.shipDebrisSize * factor
     renderDebris (lineSize, angle, moveAngle, yOffset) =

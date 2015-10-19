@@ -104,17 +104,17 @@ tickShipState maybeShip =
       in
         case ship.status of
           Dead ->
-            if tickCount < Constants.deadShipTime then
+            if tickCount < Constants.deadShipTicks then
               Just ship'
             else
               Nothing
           Invincible ->
-            if tickCount < Constants.invincibleShipTime then
+            if tickCount < Constants.invincibleShipTicks then
               Just ship'
             else
               Just { ship' | status <- Alive }
           Hyperspace ->
-            if tickCount < Constants.hyperspaceTime then
+            if tickCount < Constants.hyperspaceTicks then
               Just ship'
             else
               Just { ship' | status <- Alive }
