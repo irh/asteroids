@@ -229,11 +229,16 @@ scheduleNewLevel game =
 
 quitGame : Model -> Model
 quitGame game =
-  { game
-  | mode <- GameOver
-  , ship <- Nothing
-  , lives <- 0
-  }
+  let ship' =
+    case game.ship of
+      Just ship -> Just (killShip ship)
+      Nothing -> Nothing
+  in
+    { game
+    | mode <- GameOver
+    , ship <- ship'
+    , lives <- 0
+    }
 
 
 checkForGameOver : Model -> Model
