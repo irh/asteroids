@@ -60,13 +60,13 @@ shipSizeForCollisions : Float
 shipSizeForCollisions = shipSize * 0.4
 
 turningSpeed : Float
-turningSpeed = 0.1
+turningSpeed = 0.075
 
 thrust : Vec2
-thrust = { x = 0, y = 0.00013 }
+thrust = { x = 0, y = 0.00011 }
 
 spaceFriction : Float
-spaceFriction = 0.99
+spaceFriction = 0.992
 
 maxMomentum : Float
 maxMomentum = 0.009
