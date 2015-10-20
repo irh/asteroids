@@ -6,18 +6,18 @@ module Game
   , updateGame
   ) where
 
-import Asteroid exposing (..)
+import Asteroid exposing (Asteroid)
 import Constants
-import Data.Vec2 exposing (..)
+import Data.Vec2 exposing (Vec2)
 import Debug
-import Explosion exposing (..)
-import GameObject exposing (..)
+import Explosion exposing (Explosion)
+import GameObject exposing (GameObject)
 import KeyboardHelpers
 import Random exposing(Seed)
-import RandomHelpers exposing (..)
-import Ship exposing (..)
-import Shot exposing (..)
-import Saucer exposing (..)
+import RandomHelpers
+import Ship exposing (Ship)
+import Shot exposing (Shot)
+import Saucer exposing (Saucer)
 import Trampoline
 
 
@@ -93,7 +93,7 @@ newIntro game =
         (Random.list Constants.introAsteroidCount
           <| Random.customGenerator Asteroid.randomAsteroid)
         game.seed
-    (saucer, seed') = newSaucer 0 (Constants.initialBigSaucerCount + 1) seed
+    (saucer, seed') = Saucer.newSaucer 0 (Constants.initialBigSaucerCount + 1) seed
   in
     { defaultGame
     | mode <- Intro
@@ -106,7 +106,7 @@ newIntro game =
 newGame : Model -> Model
 newGame game =
   { defaultGame
-  | ship <- Just newShip
+  | ship <- Just Ship.newShip
   , lives <- Constants.startLives
   }
   |> newLevel
@@ -231,7 +231,7 @@ quitGame : Model -> Model
 quitGame game =
   let ship' =
     case game.ship of
-      Just ship -> Just (killShip ship)
+      Just ship -> Just (Ship.killShip ship)
       Nothing -> Nothing
   in
     { game
@@ -291,7 +291,7 @@ objectVsAsteroids object game =
     objectVsAsteroids' (_, asteroidsToCheck, game') =
       case asteroidsToCheck of
         asteroid :: tail ->
-          if collisionTest object asteroid then
+          if GameObject.collisionTest object asteroid then
             asteroidDestruction asteroid tail game'
           else
             let game'' = { game' | asteroids <- asteroid :: game'.asteroids }
@@ -311,20 +311,22 @@ asteroidDestruction : Asteroid -> List Asteroid -> Model
   -> Trampoline.Trampoline (Bool, List Asteroid, Model)
 asteroidDestruction asteroid tail game =
   let
-    destruction = destroyAsteroid asteroid game.seed
+    destruction = Asteroid.destroyAsteroid asteroid game.seed
     asteroids = List.append game.asteroids tail
+    score = Asteroid.asteroidScore asteroid
     game' =
       case destruction of
         Just (a, b, seed') ->
           { game | asteroids <- a :: b :: asteroids, seed <- seed' }
-            |> addExplosion asteroid.position
-            |> addScore (asteroidScore asteroid)
         Nothing ->
           { game | asteroids <- asteroids }
-            |> addExplosion asteroid.position
-            |> addScore (asteroidScore asteroid)
   in
-    Trampoline.Done (True, [], game')
+    Trampoline.Done
+      (True, [],
+        game'
+        |> addExplosion asteroid.position
+        |> addScore score
+      )
 
 
 objectVsObject :
@@ -339,7 +341,7 @@ objectVsObject maybeObjectB collisionFunction (maybeObject, game) =
       case maybeObjectB of
         Nothing -> (maybeObject, game)
         Just objectB ->
-          if collisionTest object objectB then
+          if GameObject.collisionTest object objectB then
             (Nothing, collisionFunction object objectB game)
           else
             (maybeObject, game)
@@ -349,7 +351,7 @@ doShipCollision : GameObject a -> Ship -> Model -> Model
 doShipCollision _ ship game =
   if ship.status == Ship.Alive then
     { game
-    | ship <- Just (killShip ship)
+    | ship <- Just (Ship.killShip ship)
     , lives <- game.lives - 1
     }
     |> addExplosion ship.position
@@ -360,7 +362,7 @@ doSaucerCollision : Bool -> GameObject a -> Saucer -> Model -> Model
 doSaucerCollision score _ saucer game =
   { game | saucer <- Nothing }
   |> addExplosion saucer.position
-  |> addScore (if score then (saucerScore saucer) else 0)
+  |> addScore (if score then (Saucer.saucerScore saucer) else 0)
   |> scheduleSaucer
 
 
@@ -425,7 +427,7 @@ fireShot game =
 addExplosion : Vec2 -> Model -> Model
 addExplosion position game =
   let
-    (explosion, seed) = newExplosion position game.seed
+    (explosion, seed) = Explosion.newExplosion position game.seed
   in
     { game
     | explosions <- explosion :: game.explosions
@@ -436,7 +438,7 @@ addExplosion position game =
 tickExplosions : Model -> Model
 tickExplosions game =
   { game
-  | explosions <- List.filterMap tickExplosion game.explosions
+  | explosions <- List.filterMap Explosion.tickExplosion game.explosions
   }
 
 
@@ -447,7 +449,7 @@ tickShipState game =
     ship' =
       case maybeShip of
         Just _ -> maybeShip
-        Nothing -> if game.lives == 0 then Nothing else (Just invincibleShip)
+        Nothing -> if game.lives == 0 then Nothing else (Just Ship.invincibleShip)
   in { game | ship <- ship' }
 
 
@@ -470,7 +472,7 @@ tickSaucer game =
     Nothing ->
       if game.tickCount == game.nextSaucerTickCount then
         let
-          (saucer, seed) = newSaucer game.score game.saucerCount game.seed
+          (saucer, seed) = Saucer.newSaucer game.score game.saucerCount game.seed
         in
           { game
           | saucer <- Just saucer
@@ -483,7 +485,8 @@ tickSaucer game =
 scheduleSaucer : Model -> Model
 scheduleSaucer game =
   let
-    (ticks, seed) = randomInt Constants.saucerTicksMin Constants.saucerTicksMax game.seed
+    (ticks, seed) =
+      RandomHelpers.randomInt Constants.saucerTicksMin Constants.saucerTicksMax game.seed
   in
     { game
     | seed <- seed
@@ -511,7 +514,7 @@ hyperspace : Model -> Model
 hyperspace game =
   if game.mode == Play then
     let
-      (ship, seed) = goIntoHyperspace game.ship game.seed
+      (ship, seed) = Ship.goIntoHyperspace game.ship game.seed
     in
       { game | ship <- ship, seed <- seed }
   else game
