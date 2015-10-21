@@ -18,7 +18,6 @@ import RandomHelpers
 import Ship exposing (Ship)
 import Shot exposing (Shot)
 import Saucer exposing (Saucer)
-import Trampoline
 
 
 type Update
@@ -267,66 +266,44 @@ shotCollisions game =
   let
     shotCollision shot game' =
       let
-        (shot', game'') =
+        (maybeShot, game'') =
           objectVsAsteroids shot game'
           |> objectVsObject game'.ship doShipCollision
           |> objectVsObject game'.saucer (doSaucerCollision True)
       in
-        case shot' of
-          Just shot'' ->
+        case maybeShot of
+          Just shot' ->
             { game''
-            | shots <- shot'' :: game'.shots
+            | shots <- shot' :: game'.shots
             }
           Nothing -> game''
-  in
-    List.foldr
-      shotCollision
-      { game | shots <- [] }
-      game.shots
+    game' =
+      List.foldr
+        shotCollision
+        { game | shots <- [] }
+        game.shots
+  in game' |> destroyShotAsteroids
 
 
 objectVsAsteroids : GameObject a -> Model -> (Maybe (GameObject a), Model)
 objectVsAsteroids object game =
   let
-    objectVsAsteroids' (_, asteroidsToCheck, game') =
-      case asteroidsToCheck of
-        asteroid :: tail ->
-          if GameObject.collisionTest object asteroid then
-            asteroidDestruction asteroid tail game'
-          else
-            let game'' = { game' | asteroids <- asteroid :: game'.asteroids }
-            in Trampoline.Continue (\_ -> objectVsAsteroids' (False, tail, game''))
-        [] -> Trampoline.Done (False, [], game')
-    emptyAsteroids = { game | asteroids <- [] }
-    (collision, _, game') =
-      Trampoline.trampoline (objectVsAsteroids' (False, game.asteroids, emptyAsteroids))
+    asteroidCollisionTest asteroid =
+      asteroid.status == Asteroid.Active
+      && GameObject.collisionTest object asteroid
+    tagShotAsteroid asteroid =
+      if asteroidCollisionTest asteroid then
+        { asteroid | status <- Asteroid.Destroyed }
+      else asteroid
   in
-    if collision then
-      (Nothing, game')
-    else
-      (Just object, game')
-
-
-asteroidDestruction : Asteroid -> List Asteroid -> Model
-  -> Trampoline.Trampoline (Bool, List Asteroid, Model)
-asteroidDestruction asteroid tail game =
-  let
-    destruction = Asteroid.destroyAsteroid asteroid game.seed
-    asteroids = List.append game.asteroids tail
-    score = Asteroid.asteroidScore asteroid
-    game' =
-      case destruction of
-        Just (a, b, seed') ->
-          { game | asteroids <- a :: b :: asteroids, seed <- seed' }
-        Nothing ->
-          { game | asteroids <- asteroids }
-  in
-    Trampoline.Done
-      (True, [],
-        game'
-        |> addExplosion asteroid.position
-        |> addScore score
+    if List.any asteroidCollisionTest game.asteroids then
+      ( Nothing
+        , { game
+          | asteroids <- List.map tagShotAsteroid game.asteroids
+          }
       )
+    else
+      (Just object, game)
 
 
 objectVsObject :
@@ -345,6 +322,39 @@ objectVsObject maybeObjectB collisionFunction (maybeObject, game) =
             (Nothing, collisionFunction object objectB game)
           else
             (maybeObject, game)
+
+
+destroyShotAsteroids : Model -> Model
+destroyShotAsteroids game =
+  if List.any (\asteroid -> asteroid.status == Asteroid.Destroyed) game.asteroids then
+    List.foldr
+      destroyShotAsteroid
+      { game | asteroids <- [] }
+      game.asteroids
+  else game
+
+
+destroyShotAsteroid : Asteroid -> Model -> Model
+destroyShotAsteroid asteroid game =
+  if asteroid.status == Asteroid.Destroyed then
+    let
+      destruction = Asteroid.destroyAsteroid asteroid game.seed
+      score = Asteroid.asteroidScore asteroid
+      game' =
+        case destruction of
+          Just (a, b, seed') ->
+            { game
+            | asteroids <- a :: b :: game.asteroids
+            , seed <- seed'
+            }
+          Nothing ->
+            { game | asteroids <- game.asteroids }
+    in
+      game'
+      |> addExplosion asteroid.position
+      |> addScore score
+  else
+    { game | asteroids <- asteroid :: game.asteroids }
 
 
 doShipCollision : GameObject a -> Ship -> Model -> Model
@@ -393,10 +403,11 @@ gameObjectVsAsteroids maybeObject collisionFunction game =
   case maybeObject of
     Nothing -> game
     Just object ->
-      let (object', game') = objectVsAsteroids object game
+      let
+        (object', game') = objectVsAsteroids object game
       in case object' of
         Just _ -> game'
-        Nothing -> collisionFunction object object game'
+        Nothing -> collisionFunction object object (game' |> destroyShotAsteroids)
 
 
 shipVsAsteroids : Model -> Model

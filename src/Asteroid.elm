@@ -2,6 +2,7 @@ module Asteroid
   ( Asteroid
   , Size (..)
   , Kind (..)
+  , Status (..)
   , newAsteroid
   , randomAsteroid
   , tickAsteroid
@@ -28,10 +29,15 @@ type Kind
   | B
   | C
 
+type Status
+  = Active
+  | Destroyed
+
 
 type alias Asteroid =
   { sizeClass : Size
   , kind : Kind
+  , status : Status
   , position : Vec2
   , momentum : Vec2
   , size : Float
@@ -44,6 +50,7 @@ defaultAsteroid =
   { sizeClass = Big
   , size = asteroidSize Big
   , kind = A
+  , status = Active
   , position = origin
   , momentum = origin
   , angle = 0
@@ -166,6 +173,7 @@ splitAsteroid asteroid size seed =
       { asteroid
       | sizeClass <- size
       , size <- asteroidSize size
+      , status <- Active
       }
     (a, seed') = (newAsteroid, seed) |> randomizeNewAsteroidProperties
     (b, seed'') = (newAsteroid, seed') |> randomizeNewAsteroidProperties
