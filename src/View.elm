@@ -256,7 +256,10 @@ asteroidPath asteroid  =
   case asteroid.kind of
     Asteroid.A -> asteroidPathA
     Asteroid.B -> asteroidPathB
-    Asteroid.C -> asteroidPathC
+    Asteroid.C ->
+      case asteroid.sizeClass of
+        Asteroid.Small -> asteroidPathCSmall
+        _ -> asteroidPathC
 
 
 asteroidPathA : Path
@@ -312,6 +315,22 @@ asteroidPathC =
   , (-1.0, -0.333)
   , (-0.8, 0.1)
   , (-1.0, 0.333)
+  ]
+
+asteroidPathCSmall : Path
+asteroidPathCSmall =
+  [ (-1.0, 0.8)
+  , (-0.4, 1.0)
+  , (0.9, 0.8)
+  , (1.0, 0.1)
+  , (1.0, -0.4)
+  , (0.9, -0.9)
+  , (0.2, -1.0)
+  , (0.0, -0.7)
+  , (-0.333, -1.0)
+  , (-0.7, -1.0)
+  , (-1.0, -0.333)
+  , (-0.8, 0.333)
   ]
 
 
