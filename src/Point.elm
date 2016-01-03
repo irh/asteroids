@@ -37,9 +37,12 @@ wrapFloat input min max =
   let
     size = max - min
   in
-    if | input < min -> input + size
-       | input >= max -> input - size
-       | otherwise -> input
+    if input < min then
+      input + size
+    else if input >= max then
+      input - size
+    else
+      input
 
 
 asTuple : Point -> (Float, Float)

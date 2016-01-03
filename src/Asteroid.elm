@@ -4,7 +4,7 @@ module Asteroid
   , Kind (..)
   , Status (..)
   , newAsteroid
-  , randomAsteroid
+  , introAsteroid
   , tickAsteroid
   , destroyAsteroid
   , asteroidSize
@@ -12,10 +12,9 @@ module Asteroid
   ) where
 
 import Constants
-import Data.Vec2 exposing (..)
-import Random exposing (Seed)
+import Vec2 exposing (..)
+import Random exposing (..)
 import RandomHelpers exposing (..)
-import Vec2Helpers exposing (..)
 
 
 type Size
@@ -57,105 +56,111 @@ defaultAsteroid =
   }
 
 
-newAsteroid : Seed -> (Asteroid, Seed)
-newAsteroid seed =
+newAsteroid : Generator Asteroid
+newAsteroid =
+  map
+    (\position -> { defaultAsteroid | position = position })
+    positionOnSideGenerator
+  `andThen` asteroidPropertiesRandomizer
+
+
+introAsteroid : Generator Asteroid
+introAsteroid =
+  map2
+    (\size position ->
+      { defaultAsteroid
+      | sizeClass = size
+      , size = asteroidSize size
+      , position = position
+      }
+    )
+    sizeGenerator
+    (randomVec2InBounds Constants.gameBounds)
+  `andThen` asteroidPropertiesRandomizer
+
+
+asteroidPropertiesRandomizer : Asteroid -> Generator Asteroid
+asteroidPropertiesRandomizer asteroid =
+  map2 (\kind angle ->
+      { asteroid
+      | kind = kind
+      , angle = angle
+      }
+    )
+    kindGenerator
+    (Random.float 0 (2 * pi))
+  `andThen` randomMomentumGenerator
+
+
+kindGenerator : Generator Kind
+kindGenerator =
+  map
+    (\kind ->
+      case kind of
+        0 -> A
+        1 -> B
+        _ -> C
+    )
+    (Random.int 0 3)
+
+
+sizeGenerator : Generator Size
+sizeGenerator =
+  map
+    (\kind ->
+      case kind of
+        0 -> Big
+        1 -> Medium
+        _ -> Small
+    )
+    (Random.int 0 3)
+
+
+randomMomentumGenerator : Asteroid -> Generator Asteroid
+randomMomentumGenerator asteroid =
+  let
+    momentumGenerator =
+      case asteroid.sizeClass of
+        Big -> randomVec2 -Constants.asteroidSpeedBig Constants.asteroidSpeedBig
+        Medium -> randomVec2 -Constants.asteroidSpeedMedium Constants.asteroidSpeedMedium
+        Small -> randomVec2 -Constants.asteroidSpeedSmall Constants.asteroidSpeedSmall
+  in
+    map (applyMomentum asteroid) momentumGenerator
+
+
+applyMomentum : Asteroid -> Vec2 -> Asteroid
+applyMomentum asteroid momentum =
+  let
+    mag = length momentum
+    momentum' =
+      if mag < Constants.asteroidSpeedMin then
+        scale (Constants.asteroidSpeedMin / mag) momentum
+      else
+        momentum
+  in
+    {asteroid | momentum = momentum'}
+
+
+positionOnSideGenerator : Generator Vec2
+positionOnSideGenerator =
   let
     (boundsMin, boundsMax) = Constants.gameBounds
-    (side, seed') = randomInt 0 4 seed
-    (position, seed'') =
-      if | side == 0 -> randomVec2Y seed' boundsMin.x boundsMin.y boundsMax.y
-         | side == 1 -> randomVec2X seed' boundsMin.y boundsMin.x boundsMax.x
-         | side == 2 -> randomVec2Y seed' boundsMax.x boundsMin.y boundsMax.y
-         | otherwise -> randomVec2X seed' boundsMax.y boundsMin.x boundsMax.x
-    asteroid =
-      { defaultAsteroid
-      | position <- position
-      }
   in
-    (asteroid, seed'')
-    |> randomizeNewAsteroidProperties
-
-
-randomAsteroid : Seed -> (Asteroid, Seed)
-randomAsteroid seed =
-  let
-    (sizeSelect, seed') = randomInt 0 3 seed
-    size = if | sizeSelect == 0 -> Big
-              | sizeSelect == 1 -> Medium
-              | otherwise -> Small
-    (position, seed'') = randomVec2InBounds seed' Constants.gameBounds
-    asteroid =
-      { defaultAsteroid
-      | sizeClass <- size
-      , size <- asteroidSize size
-      , position <- position
-      }
-  in
-    (asteroid, seed'')
-    |> randomizeNewAsteroidProperties
-
-
-randomizeNewAsteroidProperties : (Asteroid, Seed) -> (Asteroid, Seed)
-randomizeNewAsteroidProperties input =
-  input
-  |> randomKind
-  |> randomAngle
-  |> randomMomentum
-
-
-randomKind : (Asteroid, Seed) -> (Asteroid, Seed)
-randomKind (asteroid, seed) =
-  let
-    (kindInt, seed') = randomInt 0 3 seed
-    kind =
-      if | kindInt == 0 -> A
-         | kindInt == 1 -> B
-         | otherwise -> C
-  in
-     ({asteroid | kind <- kind}, seed')
-
-
-randomAngle : (Asteroid, Seed) -> (Asteroid, Seed)
-randomAngle (asteroid, seed) =
-  let
-    (angle, seed') = randomFloat 0 (2 * pi) seed
-  in
-    ({asteroid | angle <- angle}, seed')
-
-
-randomMomentum : (Asteroid, Seed) -> (Asteroid, Seed)
-randomMomentum (asteroid, seed) =
-  let
-    (momentum, seed') = newMomentum asteroid.sizeClass seed
-  in
-    ({asteroid | momentum <- momentum}, seed')
+    (Random.int 0 4) `andThen` \side ->
+      case side of
+        0 -> randomVec2Y boundsMin.x boundsMin.y boundsMax.y
+        1 -> randomVec2X boundsMin.y boundsMin.x boundsMax.x
+        2 -> randomVec2Y boundsMax.x boundsMin.y boundsMax.y
+        _ -> randomVec2X boundsMax.y boundsMin.x boundsMax.x
 
 
 tickAsteroid : Asteroid -> Asteroid
 tickAsteroid asteroid =
   { asteroid
-  | position <-
-      addVec asteroid.position asteroid.momentum
+  | position =
+      add asteroid.position asteroid.momentum
       |> wrapVec2 Constants.gameBounds
   }
-
-
-newMomentum : Size -> Seed -> (Vec2, Seed)
-newMomentum size seed =
-  let
-    (momentum, seed') =
-      case size of
-        Big -> randomVec2 seed -Constants.asteroidSpeedBig Constants.asteroidSpeedBig
-        Medium -> randomVec2 seed -Constants.asteroidSpeedMedium Constants.asteroidSpeedMedium
-        Small -> randomVec2 seed -Constants.asteroidSpeedSmall Constants.asteroidSpeedSmall
-    mag = magnitude momentum
-    momentum' =
-      if mag < Constants.asteroidSpeedMin then
-        scaleVec (Constants.asteroidSpeedMin / mag) momentum
-      else
-        momentum
-  in (momentum', seed')
-
 
 
 destroyAsteroid : Asteroid -> Seed -> Maybe (Asteroid, Asteroid, Seed)
@@ -169,18 +174,18 @@ destroyAsteroid asteroid seed =
 splitAsteroid : Asteroid -> Size -> Seed -> (Asteroid, Asteroid, Seed)
 splitAsteroid asteroid size seed =
   let
-    newAsteroid =
+    generator =
       { asteroid
-      | sizeClass <- size
-      , size <- asteroidSize size
-      , status <- Active
+      | sizeClass = size
+      , size = asteroidSize size
+      , status = Active
       }
-    (a, seed') = (newAsteroid, seed) |> randomizeNewAsteroidProperties
-    (b, seed'') = (newAsteroid, seed') |> randomizeNewAsteroidProperties
+      |> asteroidPropertiesRandomizer
+    ((a, b), seed') = generate (pair generator generator) seed
   in
     ( a |> tickAsteroid
     , b |> tickAsteroid
-    , seed''
+    , seed'
     )
 
 

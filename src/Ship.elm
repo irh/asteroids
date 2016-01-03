@@ -12,11 +12,10 @@ module Ship
   ) where
 
 import Constants
-import Data.Vec2 exposing (..)
+import Vec2 exposing (..)
 import KeyboardHelpers
-import Random exposing (Seed)
+import Random exposing (Seed, generate)
 import Shot exposing (Shot)
-import Vec2Helpers exposing (wrapVec2, randomVec2InBounds)
 
 
 type Status
@@ -50,24 +49,24 @@ defaultShip =
 newShip : Ship
 newShip =
   { defaultShip
-  | status <- Alive
+  | status = Alive
   }
 
 
 invincibleShip : Ship
 invincibleShip =
   { defaultShip
-  | status <- Invincible
+  | status = Invincible
   }
 
 
 killShip : Ship -> Ship
 killShip ship =
   { ship
-  | status <- Dead
-  , tickCount <- 0
-  , thrust <- False
-  , momentum <- scaleVec Constants.deadShipMomentumChange ship.momentum
+  | status = Dead
+  , tickCount = 0
+  , thrust = False
+  , momentum = scale Constants.deadShipMomentumChange ship.momentum
   }
 
 
@@ -79,13 +78,13 @@ goIntoHyperspace maybeShip seed =
       case ship.status of
         Alive ->
           let
-            (position, seed') = randomVec2InBounds seed Constants.gameBounds
+            (position, seed') = generate (randomVec2InBounds Constants.gameBounds) seed
             ship' =
               { ship
-              | status <- Hyperspace
-              , position <- position
-              , momentum <- origin
-              , tickCount <- 0
+              | status = Hyperspace
+              , position = position
+              , momentum = origin
+              , tickCount = 0
               }
           in (Just ship', seed')
         _ -> (Just ship, seed)
@@ -98,7 +97,7 @@ tickShipState maybeShip =
     Just ship ->
       let
         tickCount = ship.tickCount + 1
-        ship' = { ship | tickCount <- tickCount }
+        ship' = { ship | tickCount = tickCount }
       in
         case ship.status of
           Dead ->
@@ -110,12 +109,12 @@ tickShipState maybeShip =
             if tickCount < Constants.invincibleShipTicks then
               Just ship'
             else
-              Just { ship' | status <- Alive }
+              Just { ship' | status = Alive }
           Hyperspace ->
             if tickCount < Constants.hyperspaceTicks then
               Just ship'
             else
-              Just { ship' | status <- Alive }
+              Just { ship' | status = Alive }
           _ -> Just ship'
 
 
@@ -134,7 +133,7 @@ moveShip maybeShip arrows =
 moveDeadShip : Ship -> Ship
 moveDeadShip ship =
   { ship
-  | position <- applyMomentum ship.position ship.momentum
+  | position = applyMomentum ship.position ship.momentum
   }
 
 
@@ -142,38 +141,43 @@ moveLiveShip : Ship -> KeyboardHelpers.Arrows -> Ship
 moveLiveShip ship arrows =
   let
     angle =
-      if | arrows.x > 0 -> ship.angle - Constants.turningSpeed
-         | arrows.x < 0 -> ship.angle + Constants.turningSpeed
-         | otherwise -> ship.angle
+      if arrows.x > 0 then
+        ship.angle - Constants.turningSpeed
+      else if arrows.x < 0 then
+        ship.angle + Constants.turningSpeed
+      else
+        ship.angle
     thrust = arrows.y > 0
     momentum =
-      if | thrust -> applyThrust ship.momentum angle
-         | otherwise -> ship.momentum
-      |> scaleVec Constants.spaceFriction
+      if thrust then
+        applyThrust ship.momentum angle
+      else
+        ship.momentum
+      |> scale Constants.spaceFriction
     position = applyMomentum ship.position momentum
   in
     { ship
-    | position <- position
-    , momentum <- momentum
-    , angle <- angle
-    , thrust <- thrust
+    | position = position
+    , momentum = momentum
+    , angle = angle
+    , thrust = thrust
     }
 
 
 applyMomentum : Vec2 -> Vec2 -> Vec2
 applyMomentum position momentum =
-  addVec position momentum
+  add position momentum
   |> wrapVec2 Constants.gameBounds
 
 
 applyThrust : Vec2 -> Float -> Vec2
 applyThrust momentum angle =
   let
-    momentum' = addVec momentum (rotVec angle Constants.thrust)
-    momentumMagnitude = magnitude momentum'
+    momentum' = add momentum (rotate angle Constants.thrust)
+    momentumMagnitude = length momentum'
   in
     if momentumMagnitude > Constants.maxMomentum then
-      scaleVec (Constants.maxMomentum / momentumMagnitude) momentum'
+      scale (Constants.maxMomentum / momentumMagnitude) momentum'
     else
       momentum'
 
@@ -189,8 +193,8 @@ fireShot maybeShip =
         _ ->
           let
             shotOffset = ship.size + Constants.shotSize
-            shotPosition = rotVec ship.angle { x = 0.0, y = shotOffset }
-              |> addVec ship.position
+            shotPosition = rotate ship.angle { x = 0.0, y = shotOffset }
+              |> add ship.position
           in
             Just (Shot.newShot shotPosition ship.angle)
 

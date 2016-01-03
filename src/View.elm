@@ -3,7 +3,7 @@ module View (view) where
 import Asteroid exposing (Asteroid, Kind)
 import Color exposing (Color, rgb)
 import Constants
-import Data.Vec2 exposing (..)
+import Vec2 exposing (Vec2)
 import Explosion exposing (Explosion)
 import Game
 import Graphics.Collage exposing (..)
@@ -94,13 +94,13 @@ renderLiveShip ship factor =
     shipPosition = (scaleTuple (asTuple ship.position) factor)
     shipSize = (Constants.shipSize * factor)
     lineStyle = shipLineStyle
-    shipTransform = (\path ->
-      scalePath path shipSize
-      |> traced lineStyle
+    shipTransform = (\points ->
+      Graphics.Collage.polygon (scalePoints points shipSize)
+      |> outlined lineStyle
       )
     showThrust = ship.thrust && (ship.tickCount % 3 == 0)
-    shipPaths = if showThrust then [ shipPath, thrustPath ] else [ shipPath ]
-    shipShape = List.map shipTransform shipPaths
+    points = if showThrust then [ shipPoints, thrustPoints ] else [ shipPoints ]
+    shipShape = List.map shipTransform points
   in
     group shipShape
     |> move shipPosition
@@ -120,7 +120,7 @@ renderShipDebris ship factor =
       |> traced shipLineStyle
       |> rotate angle
       |> move (xOffset * shipSize, yOffset * shipSize)
-      |> move (asTuple (rotVec moveAngle { x = 0, y = debrisSize }))
+      |> move (asTuple (Vec2.rotate moveAngle { x = 0, y = debrisSize }))
     debris = List.map renderDebris
       [ (0.45, pi / 8, -pi / 6, -0.05, 0.15)
       , (0.5, pi / 12, -pi / 3, -0.05, -0.35)
@@ -138,7 +138,7 @@ renderLives : Int -> Float -> Float -> Float -> Form
 renderLives lives factor width height =
   let
     shipSize = (Constants.lifeSize * factor)
-    ship = scalePath shipPath shipSize
+    ship = Graphics.Collage.path (scalePoints shipPoints shipSize)
       |> traced shipLineStyle
     ships = List.repeat lives ship
       |> List.indexedMap (\i ship' -> (ship |> move ((toFloat i) * shipSize, 0)))
@@ -155,10 +155,10 @@ renderSaucer maybeSaucer factor =
       let
         saucerSize = (Saucer.saucerSizeForView saucer) * factor
         saucerTransform = (\path ->
-          scalePath path saucerSize
+          Graphics.Collage.polygon (scalePoints path saucerSize)
           |> outlined shipLineStyle
           )
-        outlinePath =
+        outlinePoints =
           [ (-0.5, 0)
           , (-0.1667, 0.23)
           , (-0.08, 0.4)
@@ -169,7 +169,7 @@ renderSaucer maybeSaucer factor =
           , (-0.2, -0.2)
           ]
         saucerShapes = List.map saucerTransform
-          [ outlinePath
+          [ outlinePoints
           , [(-0.5, 0), (0.5, 0)]
           , [(-0.1667, 0.23), (0.1667, 0.23)]
           ]
@@ -190,7 +190,7 @@ renderAsteroid asteroid factor =
   let
     size = factor * asteroid.size
   in
-    scalePath (asteroidPath asteroid) size
+    Graphics.Collage.polygon (scalePoints (asteroidPoints asteroid) size)
     |> outlined asteroidLineStyle
     |> move (scaleTuple (asTuple asteroid.position) factor)
     |> rotate asteroid.angle
@@ -226,44 +226,44 @@ renderExplosion explosion factor =
     |> rotate explosion.angle
 
 
-scalePath : Path -> Float -> Path
-scalePath path factor =
+type alias Points = List (Float, Float)
+
+scalePoints : Points -> Float -> Points
+scalePoints path factor =
   List.map (\(x, y) -> (x * factor, y * factor)) path
 
 
-shipPath : Path
-shipPath =
+shipPoints : Points
+shipPoints =
   [ (-shipWidth, -shipHeight)
   , (0, shipHeight)
   , (shipWidth, -shipHeight)
   , (crossBarX, crossBarY)
   , (-crossBarX, crossBarY)
-  , (-shipWidth, -shipHeight)
   ]
 
 
-thrustPath : Path
-thrustPath =
+thrustPoints : Points
+thrustPoints =
   [ (-flameX, flameY)
   , (flameX, flameY)
   , (0, flameY2)
-  , (-flameX, flameY)
   ]
 
 
-asteroidPath : Asteroid -> Path
-asteroidPath asteroid  =
+asteroidPoints : Asteroid -> Points
+asteroidPoints asteroid  =
   case asteroid.kind of
-    Asteroid.A -> asteroidPathA
-    Asteroid.B -> asteroidPathB
+    Asteroid.A -> asteroidPointsA
+    Asteroid.B -> asteroidPointsB
     Asteroid.C ->
       case asteroid.sizeClass of
-        Asteroid.Small -> asteroidPathCSmall
-        _ -> asteroidPathC
+        Asteroid.Small -> asteroidPointsCSmall
+        _ -> asteroidPointsC
 
 
-asteroidPathA : Path
-asteroidPathA =
+asteroidPointsA : Points
+asteroidPointsA =
   [ (-1.0, 0.5)
   , (-0.5, 1.0)
   , (0.0, 0.7)
@@ -277,8 +277,8 @@ asteroidPathA =
   ]
 
 
-asteroidPathB : Path
-asteroidPathB =
+asteroidPointsB : Points
+asteroidPointsB =
   [ (-1.0, 0.5)
   , (-0.2, 0.5)
   , (-0.5, 1.0)
@@ -294,8 +294,8 @@ asteroidPathB =
   ]
 
 
-asteroidPathC : Path
-asteroidPathC =
+asteroidPointsC : Points
+asteroidPointsC =
   [ (-1.0, 0.8)
   , (-0.4, 1.0)
   , (0.2, 0.8)
@@ -317,8 +317,8 @@ asteroidPathC =
   , (-1.0, 0.333)
   ]
 
-asteroidPathCSmall : Path
-asteroidPathCSmall =
+asteroidPointsCSmall : Points
+asteroidPointsCSmall =
   [ (-1.0, 0.8)
   , (-0.4, 1.0)
   , (0.9, 0.8)
@@ -337,30 +337,30 @@ asteroidPathCSmall =
 shipLineStyle : LineStyle
 shipLineStyle =
   { defaultLine
-  | color <- shipColor
-  , join <- Clipped
+  | color = shipColor
+  , join = Clipped
   }
 
 
 backgroundLineStyle : LineStyle
 backgroundLineStyle =
   { defaultLine
-  | color <- backgroundColor
+  | color = backgroundColor
   }
 
 
 asteroidLineStyle : LineStyle
 asteroidLineStyle =
   { defaultLine
-  | color <- asteroidColor
+  | color = asteroidColor
   }
 
 
 borderLineStyle : LineStyle
 borderLineStyle =
   { defaultLine
-  | color <- borderColor
-  , width <- 2
+  | color = borderColor
+  , width = 2
   }
 
 

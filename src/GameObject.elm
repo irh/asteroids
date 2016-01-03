@@ -1,7 +1,6 @@
 module GameObject where
 
-import Data.Vec2 exposing (Vec2)
-import Vec2Helpers exposing (circlesOverlap)
+import Vec2 exposing (Vec2, circlesOverlap)
 
 type alias GameObject a =
   { a

@@ -1,7 +1,7 @@
 module Explosion where
 
 import Constants
-import Data.Vec2 exposing (Vec2)
+import Vec2 exposing (Vec2)
 import Random exposing (Seed)
 import RandomHelpers exposing (randomFloat)
 
@@ -32,6 +32,6 @@ tickExplosion explosion =
     tickCount = explosion.tickCount + 1
   in
     if tickCount < Constants.explosionLifetime then
-      Just { explosion | tickCount <- tickCount }
+      Just { explosion | tickCount = tickCount }
     else
       Nothing

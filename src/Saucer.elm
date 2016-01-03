@@ -10,12 +10,11 @@ module Saucer
   ) where
 
 import Constants
-import Data.Vec2 exposing (..)
-import Random exposing (Seed)
+import Vec2 exposing (..)
+import Random exposing (Seed, generate)
 import RandomHelpers exposing (..)
 import Ship exposing (Ship)
 import Shot exposing (Shot)
-import Vec2Helpers exposing (wrapVec2, randomVec2InBounds, angleBetween)
 
 
 type Type
@@ -50,10 +49,14 @@ newSaucer score saucerCount seed =
   let
     (select, seed') = randomInt 0 3 seed
     saucerType =
-      if | saucerCount <= Constants.initialBigSaucerCount -> Big
-         | score >= 10000 -> Small
-         | select == 0 -> Small
-         | otherwise -> Big
+      if saucerCount <= Constants.initialBigSaucerCount then
+        Big
+      else if score >= 10000 then
+        Small
+      else if select == 0 then
+        Small
+      else
+        Big
     size = Constants.saucerSizeCollisionRatio *
       if saucerType == Small then
         Constants.saucerSizeSmall
@@ -68,9 +71,9 @@ newSaucer score saucerCount seed =
       else 0
     saucer =
       { defaultSaucer
-      | saucerType <- saucerType
-      , size <- size
-      , shotAccuracy <- shotAccuracy
+      | saucerType = saucerType
+      , size = size
+      , shotAccuracy = shotAccuracy
       }
   in
     (saucer, seed')
@@ -96,8 +99,8 @@ randomXPosition (saucer, seed) =
         (Constants.gameBoundsMinX, Constants.saucerSpeedX)
   in
     ( { saucer
-      | position <- { x = positionX, y = saucer.position.y }
-      , momentum <- { x = speedX, y = saucer.momentum.y }
+      | position = { x = positionX, y = saucer.position.y }
+      , momentum = { x = speedX, y = saucer.momentum.y }
       }
     , seed'
     )
@@ -109,7 +112,7 @@ randomYPosition (saucer, seed) =
     (positionY, seed') =
       randomFloat Constants.gameBoundsMinY Constants.gameBoundsMaxY seed
   in
-    ( { saucer | position <- { x = saucer.position.x, y = positionY } }
+    ( { saucer | position = { x = saucer.position.x, y = positionY } }
     , seed'
     )
 
@@ -118,12 +121,12 @@ randomYSpeed : (Saucer, Seed) -> (Saucer, Seed)
 randomYSpeed (saucer, seed) =
   let
     (dirY, seed') = randomInt 0 3 seed
-    speedY =
-      if | dirY == 0 -> -Constants.saucerSpeedY
-         | dirY == 1 -> 0
-         | otherwise -> Constants.saucerSpeedY
+    speedY = case dirY of
+      0 -> -Constants.saucerSpeedY
+      1 -> 0
+      _ -> Constants.saucerSpeedY
   in
-    ( { saucer | momentum <- { x = saucer.momentum.x, y = speedY } }
+    ( { saucer | momentum = { x = saucer.momentum.x, y = speedY } }
     , seed'
     )
 
@@ -133,7 +136,7 @@ scheduleDirectionChange (saucer, seed) =
   let (change, seed') =
     randomInt Constants.saucerDirectionTicksMin Constants.saucerDirectionTicksMax seed
   in
-    ( { saucer | tickNextDirectionChange <- saucer.tickCount + change }
+    ( { saucer | tickNextDirectionChange = saucer.tickCount + change }
     , seed'
     )
 
@@ -144,20 +147,23 @@ moveSaucer maybeSaucer =
     Nothing -> Nothing
     Just saucer ->
       let
-        position = addVec saucer.position saucer.momentum
+        position = add saucer.position saucer.momentum
         wrappedY =
-          if | position.y > Constants.gameBoundsMaxY -> Constants.gameBoundsMinY
-             | position.y < Constants.gameBoundsMinY -> Constants.gameBoundsMaxY
-             | otherwise -> position.y
-        positionWrapped = { position | y <- wrappedY }
+          if position.y > Constants.gameBoundsMaxY then
+            Constants.gameBoundsMinY
+          else if position.y < Constants.gameBoundsMinY then
+            Constants.gameBoundsMaxY
+          else
+            position.y
+        positionWrapped = { position | y = wrappedY }
       in
-        Just { saucer | position <- positionWrapped }
+        Just { saucer | position = positionWrapped }
 
 
 tickSaucer : Saucer -> Seed -> (Saucer, Seed)
 tickSaucer saucer seed =
   { saucer
-  | tickCount <- saucer.tickCount + 1
+  | tickCount = saucer.tickCount + 1
   }
   |> changeDirection seed
 
@@ -168,12 +174,16 @@ changeDirection seed saucer =
     let
       (dir, seed') = randomInt 0 2 seed
       newY =
-        ( if | saucer.momentum.y > 0 -> if dir == 0 then -1 else 0
-             | saucer.momentum.y < 0 -> if dir == 0 then 1 else 0
-             | otherwise -> if dir == 0 then 1 else -1
+        ( if saucer.momentum.y > 0 then
+            if dir == 0 then -1 else 0
+          else if saucer.momentum.y < 0 then
+            if dir == 0 then 1 else 0
+          else
+            (if dir == 0 then 1 else -1)
         ) * Constants.saucerSpeedY
-      saucer' = { saucer
-        | momentum <- { x = saucer.momentum.x, y = newY }
+      saucer' =
+        { saucer
+        | momentum = { x = saucer.momentum.x, y = newY }
         }
     in
       (saucer', seed')
@@ -189,8 +199,8 @@ maybeFireShot saucer ship seed =
       (angle, seed') = shotAngle saucer ship seed
       shotOffset = saucer.size + Constants.shotSize
       shotPosition =
-        rotVec angle { x = 0.0, y = shotOffset }
-        |> addVec saucer.position
+        rotate angle { x = 0.0, y = shotOffset }
+        |> add saucer.position
     in
       (Just (Shot.newShot shotPosition angle), seed')
   else
