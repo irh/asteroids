@@ -91,7 +91,8 @@ newIntro game =
       Random.generate
         (Random.list Constants.introAsteroidCount Asteroid.introAsteroid)
         game.seed
-    (saucer, seed') = Saucer.newSaucer 0 (Constants.initialBigSaucerCount + 1) seed
+    (saucer, seed') =
+      Random.generate (Saucer.newSaucer 0 (Constants.initialBigSaucerCount + 1)) seed
   in
     { defaultGame
     | mode = Intro
@@ -483,7 +484,8 @@ tickSaucer game =
     Nothing ->
       if game.tickCount == game.nextSaucerTickCount then
         let
-          (saucer, seed) = Saucer.newSaucer game.score game.saucerCount game.seed
+          (saucer, seed) =
+            Random.generate (Saucer.newSaucer game.score game.saucerCount) game.seed
         in
           { game
           | saucer = Just saucer

@@ -11,7 +11,7 @@ module Saucer
 
 import Constants
 import Vec2 exposing (..)
-import Random exposing (Seed, generate)
+import Random exposing (..)
 import RandomHelpers exposing (..)
 import Ship exposing (Ship)
 import Shot exposing (Shot)
@@ -44,91 +44,85 @@ defaultSaucer =
   }
 
 
-newSaucer : Int -> Int -> Seed -> (Saucer, Seed)
-newSaucer score saucerCount seed =
-  let
-    (select, seed') = randomInt 0 3 seed
-    saucerType =
-      if saucerCount <= Constants.initialBigSaucerCount then
-        Big
-      else if score >= 10000 then
-        Small
-      else if select == 0 then
-        Small
-      else
-        Big
-    size = Constants.saucerSizeCollisionRatio *
-      if saucerType == Small then
-        Constants.saucerSizeSmall
-      else
-        Constants.saucerSizeBig
-    shotAccuracy =
-      if saucerType == Small then
-        let
-          difficulty = min 1.0 ((toFloat score) / (toFloat Constants.maxDifficultyScore))
-        in
-          interpolate Constants.saucerShotAccuracyRange difficulty
-      else 0
-    saucer =
-      { defaultSaucer
-      | saucerType = saucerType
+newSaucer : Int -> Int -> Generator Saucer
+newSaucer score saucerCount =
+  map4
+    (\(saucerType, size, shotAccuracy) (positionX, speedX) (positionY, speedY) ticks ->
+      { saucerType = saucerType
+      , position = { x = positionX, y = positionY }
+      , momentum = { x = speedX, y = speedY }
       , size = size
+      , tickCount = 0
+      , tickNextDirectionChange = ticks
       , shotAccuracy = shotAccuracy
       }
-  in
-    (saucer, seed')
-    |> randomXPosition
-    |> randomYPosition
-    |> randomYSpeed
-    |> scheduleDirectionChange
+    )
+    (saucerTypeSizeAndAccuracyGenerator score saucerCount)
+    posAndSpeedXGenerator
+    posAndSpeedYGenerator
+    (int Constants.saucerDirectionTicksMin Constants.saucerDirectionTicksMax)
+
+
+saucerTypeSizeAndAccuracyGenerator : Int -> Int -> Generator (Type, Float, Float)
+saucerTypeSizeAndAccuracyGenerator score saucerCount =
+  map
+    (\select ->
+      let
+        saucerType =
+          if saucerCount <= Constants.initialBigSaucerCount then
+            Big
+          else if score >= 10000 then
+            Small
+          else if select == 0 then
+            Small
+          else
+            Big
+        size = Constants.saucerSizeCollisionRatio *
+          if saucerType == Small then
+            Constants.saucerSizeSmall
+          else
+            Constants.saucerSizeBig
+        shotAccuracy =
+          if saucerType == Small then
+            let
+              difficulty =
+                min 1.0 ((toFloat score) / (toFloat Constants.maxDifficultyScore))
+            in
+              interpolate Constants.saucerShotAccuracyRange difficulty
+          else 0
+      in (saucerType, size, shotAccuracy)
+    ) (int 0 3)
+
+
+posAndSpeedXGenerator : Generator (Float, Float)
+posAndSpeedXGenerator =
+  map
+    (\dirX ->
+      if dirX == 0 then
+        (Constants.gameBoundsMaxX, -Constants.saucerSpeedX)
+      else
+        (Constants.gameBoundsMinX, Constants.saucerSpeedX)
+    ) (int 0 2)
+
+
+posAndSpeedYGenerator : Generator (Float, Float)
+posAndSpeedYGenerator =
+  map2
+    (\dirY posY ->
+      ( posY
+      , case dirY of
+          0 -> -Constants.saucerSpeedY
+          1 -> 0
+          _ -> Constants.saucerSpeedY
+      )
+    )
+    (int 0 3)
+    (float Constants.gameBoundsMinY Constants.gameBoundsMaxY)
 
 
 interpolate : (number, number) -> number -> number
 interpolate (min, max) x =
   min + (max - min) * x
-
-
-randomXPosition : (Saucer, Seed) -> (Saucer, Seed)
-randomXPosition (saucer, seed) =
-  let
-    (dirX, seed') = randomInt 0 2 seed
-    (positionX, speedX) =
-      if dirX == 0 then
-        (Constants.gameBoundsMaxX, -Constants.saucerSpeedX)
-      else
-        (Constants.gameBoundsMinX, Constants.saucerSpeedX)
-  in
-    ( { saucer
-      | position = { x = positionX, y = saucer.position.y }
-      , momentum = { x = speedX, y = saucer.momentum.y }
-      }
-    , seed'
-    )
-
-
-randomYPosition : (Saucer, Seed) -> (Saucer, Seed)
-randomYPosition (saucer, seed) =
-  let
-    (positionY, seed') =
-      randomFloat Constants.gameBoundsMinY Constants.gameBoundsMaxY seed
-  in
-    ( { saucer | position = { x = saucer.position.x, y = positionY } }
-    , seed'
-    )
-
-
-randomYSpeed : (Saucer, Seed) -> (Saucer, Seed)
-randomYSpeed (saucer, seed) =
-  let
-    (dirY, seed') = randomInt 0 3 seed
-    speedY = case dirY of
-      0 -> -Constants.saucerSpeedY
-      1 -> 0
-      _ -> Constants.saucerSpeedY
-  in
-    ( { saucer | momentum = { x = saucer.momentum.x, y = speedY } }
-    , seed'
-    )
 
 
 scheduleDirectionChange : (Saucer, Seed) -> (Saucer, Seed)
