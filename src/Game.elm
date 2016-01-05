@@ -107,6 +107,7 @@ newGame game =
   { defaultGame
   | ship <- Just Ship.newShip
   , lives <- Constants.startLives
+  , seed <- game.seed
   }
   |> newLevel
 
