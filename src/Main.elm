@@ -13,7 +13,7 @@ import Window
 
 -- Signals
 
-updateSignal : Signal Game.Update
+updateSignal : Signal Game.Action
 updateSignal =
   Signal.mergeMany
   [ Signal.map Game.StartTime Signal.Time.startTime

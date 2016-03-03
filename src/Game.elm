@@ -1,5 +1,5 @@
 module Game
-  ( Update(..)
+  ( Action(..)
   , Mode(..)
   , Model
   , intro
@@ -20,7 +20,7 @@ import Shot exposing (Shot)
 import Saucer exposing (Saucer)
 
 
-type Update
+type Action
   = Arrows KeyboardHelpers.Arrows
   | Wasd KeyboardHelpers.Arrows
   | Tick Float
@@ -74,7 +74,7 @@ defaultGame =
   }
 
 
-intro : Update -> Model
+intro : Action -> Model
 intro input =
   case input of
     StartTime time ->
@@ -131,7 +131,7 @@ newLevel game =
     } |> scheduleSaucer
 
 
-updateGame : Update -> Model -> Model
+updateGame : Action -> Model -> Model
 updateGame input game =
   case input of
     Arrows arrows -> updateArrows game arrows
