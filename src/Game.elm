@@ -4,6 +4,7 @@ module Game
   , Model
   , initialGame
   , updateGame
+  , soundSignal
   ) where
 
 import Asteroid exposing (Asteroid)
@@ -24,6 +25,14 @@ import TaskTutorial exposing (getCurrentTime)
 import Time exposing (Time)
 
 
+sounds : Signal.Mailbox String
+sounds = Signal.mailbox ""
+
+
+soundSignal : Signal String
+soundSignal = sounds.signal
+
+
 type Action
   = Arrows KeyboardHelpers.Arrows
   | Wasd KeyboardHelpers.Arrows
@@ -32,6 +41,7 @@ type Action
   | Escape Bool
   | StartTime Time
   | Window (Int, Int)
+  | Noop
 
 
 type Mode
@@ -58,6 +68,7 @@ type alias Model =
   , saucerCount : Int
   , seed : Seed
   , window : (Int, Int)
+  , sounds : List String
   }
 
 
@@ -79,6 +90,7 @@ defaultGame =
   , saucerCount = 0
   , seed = Random.initialSeed 0
   , window = (0, 0)
+  , sounds = []
   }
 
 
@@ -165,8 +177,22 @@ updateGame input game =
         else game
       StartTime (time) -> { game | seed = Random.initialSeed (round time) }
       Window (w, h) -> { game | window = (w, h)  }
-  , Effects.none
-  )
+      Noop -> game
+  ) |> triggerSounds
+
+
+triggerSounds : Model -> (Model, Effects Action)
+triggerSounds game =
+  let sendSound =
+    (\sound ->
+      (Signal.send sounds.address sound)
+      |> Effects.task
+      |> Effects.map (always Noop)
+    )
+  in
+    ( { game | sounds = [] }
+    , Effects.batch (List.map sendSound game.sounds)
+    )
 
 
 updateArrows : Model -> { x : Int, y : Int } -> Model
@@ -359,6 +385,7 @@ destroyShotAsteroid asteroid game =
     let
       destruction = Asteroid.destroyAsteroid asteroid game.seed
       score = Asteroid.asteroidScore asteroid
+      sound = Asteroid.asteroidSound asteroid
       game' =
         case destruction of
           Just (a, b, seed') ->
@@ -370,7 +397,7 @@ destroyShotAsteroid asteroid game =
             { game | asteroids = game.asteroids }
     in
       game'
-      |> addExplosion asteroid.position
+      |> addExplosion asteroid.position sound
       |> addScore score
   else
     { game | asteroids = asteroid :: game.asteroids }
@@ -383,14 +410,14 @@ doShipCollision _ ship game =
     | ship = Just (Ship.killShip ship)
     , lives = game.lives - 1
     }
-    |> addExplosion ship.position
+    |> addExplosion ship.position Constants.shipExplosionSound
   else game
 
 
 doSaucerCollision : Bool -> GameObject a -> Saucer -> Model -> Model
 doSaucerCollision score _ saucer game =
   { game | saucer = Nothing }
-  |> addExplosion saucer.position
+  |> addExplosion saucer.position (Saucer.explosionSound saucer)
   |> addScore (if score then (Saucer.saucerScore saucer) else 0)
   |> scheduleSaucer
 
@@ -444,6 +471,14 @@ saucerVsAsteroids game =
   gameObjectVsAsteroids game.saucer (doSaucerCollision False) game
 
 
+addSound : String -> List String -> List String
+addSound sound sounds =
+  if List.member sound sounds then
+    sounds
+  else
+    sound :: sounds
+
+
 fireShot : Model -> Model
 fireShot game =
   case Ship.fireShot game.ship of
@@ -451,16 +486,18 @@ fireShot game =
     Just shot ->
       { game
       | shots = shot :: game.shots
+      , sounds = addSound Constants.fireSoundShip game.sounds
       }
 
 
-addExplosion : Vec2 -> Model -> Model
-addExplosion position game =
+addExplosion : Vec2 -> String -> Model -> Model
+addExplosion position sound game =
   let
     (explosion, seed) = Explosion.newExplosion position game.seed
   in
     { game
     | explosions = explosion :: game.explosions
+    , sounds = addSound sound game.sounds
     , seed = seed
     }
 
@@ -490,14 +527,18 @@ tickSaucer game =
       let
         (saucer', seed) = Saucer.tickSaucer saucer game.seed
         (shot, seed') = Saucer.maybeFireShot saucer' game.ship seed
-        shots = case shot of
-          Just shot' -> shot' :: game.shots
-          Nothing -> game.shots
+        (shots, sounds) =
+          case shot of
+            Just shot' ->
+              ( shot' :: game.shots
+              , addSound Constants.fireSoundSaucer game.sounds)
+            Nothing -> (game.shots, game.sounds)
       in
         { game
         | saucer = Just saucer'
         , seed = seed'
         , shots = shots
+        , sounds = sounds
         }
     Nothing ->
       if game.tickCount == game.nextSaucerTickCount then
@@ -549,3 +590,4 @@ hyperspace game =
     in
       { game | ship = ship, seed = seed }
   else game
+

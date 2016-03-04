@@ -88,3 +88,16 @@ saucerTicksMax = 1000
 initialBigSaucerCount = 3
 
 maxDifficultyScore = 40000
+
+shipExplosionSound = "explosion-mid"
+
+fireSoundShip = "fire-ship"
+fireSoundSaucer = "fire-saucer"
+
+saucerExplosionSoundBig = "explosion-low"
+saucerExplosionSoundSmall = "explosion-mid"
+
+asteroidSoundBig = "explosion-low"
+asteroidSoundMedium = "explosion-mid"
+asteroidSoundSmall = "explosion-high"
+

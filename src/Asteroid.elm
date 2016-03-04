@@ -9,6 +9,7 @@ module Asteroid
   , destroyAsteroid
   , asteroidSize
   , asteroidScore
+  , asteroidSound
   ) where
 
 import Constants
@@ -208,3 +209,11 @@ asteroidScore asteroid =
     Big -> Constants.asteroidScoreBig
     Medium -> Constants.asteroidScoreMedium
     Small -> Constants.asteroidScoreSmall
+
+
+asteroidSound : Asteroid -> String
+asteroidSound asteroid =
+  case asteroid.sizeClass of
+    Big -> Constants.asteroidSoundBig
+    Medium -> Constants.asteroidSoundMedium
+    Small -> Constants.asteroidSoundSmall

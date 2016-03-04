@@ -40,3 +40,6 @@ port tasks : Signal (Task.Task Effects.Never ())
 port tasks =
   app.tasks
 
+port sounds : Signal String
+port sounds =
+  Game.soundSignal
