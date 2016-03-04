@@ -90,6 +90,8 @@ initialBigSaucerCount = 3
 maxDifficultyScore = 40000
 
 shipExplosionSound = "explosion-mid"
+shipThrustSound = "thrust"
+shipThrustSoundTicks = 6
 
 fireSoundShip = "fire-ship"
 fireSoundSaucer = "fire-saucer"

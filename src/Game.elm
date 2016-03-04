@@ -235,6 +235,7 @@ tickPlay game =
   |> tickExplosions
   |> tickShipState
   |> tickSaucer
+  |> addRecurringSounds
   |> scheduleNewLevel
   |> checkForGameOver
 
@@ -591,3 +592,17 @@ hyperspace game =
       { game | ship = ship, seed = seed }
   else game
 
+
+addRecurringSounds : Model -> Model
+addRecurringSounds game =
+  let
+    sounds' =
+      case game.ship of
+        Just ship ->
+          if ship.thrust && ship.tickCount % Constants.shipThrustSoundTicks == 0 then
+            addSound Constants.shipThrustSound game.sounds
+          else
+            game.sounds
+        _ -> game.sounds
+  in
+    { game | sounds = sounds' }
