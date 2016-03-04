@@ -595,8 +595,15 @@ hyperspace game =
 
 addRecurringSounds : Model -> Model
 addRecurringSounds game =
+  game
+  |> addThrustSound
+  |> addSaucerSound
+
+
+addThrustSound : Model -> Model
+addThrustSound game =
   let
-    sounds' =
+    sounds =
       case game.ship of
         Just ship ->
           if ship.thrust && ship.tickCount % Constants.shipThrustSoundTicks == 0 then
@@ -605,4 +612,18 @@ addRecurringSounds game =
             game.sounds
         _ -> game.sounds
   in
-    { game | sounds = sounds' }
+    { game | sounds = sounds }
+
+
+addSaucerSound : Model -> Model
+addSaucerSound game =
+  let
+    sounds =
+      let
+        saucerSound = Saucer.saucerSound game.saucer
+      in
+        case saucerSound of
+          Just sound -> addSound sound game.sounds
+          _ -> game.sounds
+  in
+    { game | sounds = sounds }

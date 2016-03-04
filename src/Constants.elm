@@ -96,6 +96,11 @@ shipThrustSoundTicks = 6
 fireSoundShip = "fire-ship"
 fireSoundSaucer = "fire-saucer"
 
+saucerSoundBig = "saucer-low"
+saucerSoundBigTicks = 8
+saucerSoundSmall = "saucer-high"
+saucerSoundSmallTicks = 8
+
 saucerExplosionSoundBig = "explosion-low"
 saucerExplosionSoundSmall = "explosion-mid"
 
