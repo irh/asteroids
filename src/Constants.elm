@@ -114,3 +114,4 @@ asteroidSoundBig = "explosion-low"
 asteroidSoundMedium = "explosion-mid"
 asteroidSoundSmall = "explosion-high"
 
+extraLifeSound = "extra-life"

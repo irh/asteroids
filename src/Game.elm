@@ -589,10 +589,16 @@ addScore score game =
       if (scoreRank game.score) < (scoreRank score')
         then game.lives + 1
         else game.lives
+    sounds =
+      if lives > game.lives then
+        addSound Constants.extraLifeSound game.sounds
+      else
+        game.sounds
   in
     { game
     | score = score'
     , lives = lives
+    , sounds = sounds
     }
 
 
