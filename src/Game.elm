@@ -2,7 +2,7 @@ module Game
   ( Action(..)
   , Mode(..)
   , Model
-  , intro
+  , initialGame
   , updateGame
   ) where
 
@@ -10,6 +10,7 @@ import Asteroid exposing (Asteroid)
 import Constants
 import Vec2 exposing (Vec2)
 import Debug
+import Effects exposing (Effects)
 import Explosion exposing (Explosion)
 import GameObject exposing (GameObject)
 import KeyboardHelpers
@@ -18,6 +19,9 @@ import RandomHelpers
 import Ship exposing (Ship)
 import Shot exposing (Shot)
 import Saucer exposing (Saucer)
+import Task
+import TaskTutorial exposing (getCurrentTime)
+import Time exposing (Time)
 
 
 type Action
@@ -26,7 +30,9 @@ type Action
   | Tick Float
   | Space Bool
   | Escape Bool
-  | StartTime Float
+  | StartTime Time
+  | Window (Int, Int)
+
 
 type Mode
   = Intro
@@ -51,6 +57,7 @@ type alias Model =
   , nextLevelTickCount : Int
   , saucerCount : Int
   , seed : Seed
+  , window : (Int, Int)
   }
 
 
@@ -71,17 +78,16 @@ defaultGame =
   , nextLevelTickCount = 0
   , saucerCount = 0
   , seed = Random.initialSeed 0
+  , window = (0, 0)
   }
 
 
-intro : Action -> Model
-intro input =
-  case input of
-    StartTime time ->
-      { defaultGame
-      | seed = Random.initialSeed (round time)
-      } |> newIntro
-    _ -> defaultGame
+initialGame : (Model, Effects Action)
+initialGame =
+  ( defaultGame
+    |> newIntro
+  , getStartTime
+  )
 
 
 newIntro : Model -> Model
@@ -99,7 +105,15 @@ newIntro game =
     , asteroids = asteroids
     , saucer = Just saucer
     , seed = seed'
+    , window = game.window
     }
+
+
+getStartTime : Effects Action
+getStartTime =
+  getCurrentTime
+  |> Task.map StartTime
+  |> Effects.task
 
 
 newGame : Model -> Model
@@ -108,6 +122,7 @@ newGame game =
   | ship = Just Ship.newShip
   , lives = Constants.startLives
   , seed = game.seed
+  , window = game.window
   }
   |> newLevel
 
@@ -131,24 +146,27 @@ newLevel game =
     } |> scheduleSaucer
 
 
-updateGame : Action -> Model -> Model
+updateGame : Action -> Model -> (Model, Effects Action)
 updateGame input game =
-  case input of
-    Arrows arrows -> updateArrows game arrows
-    Wasd wasd -> updateArrows game wasd
-    Tick _ -> tickGame game
-    Space down ->
-      case game.mode of
-        Play -> if down then fireShot game else game
-        _ -> changeGameMode game
-    Escape down ->
-      if down then
+  ( case input of
+      Arrows arrows -> updateArrows game arrows
+      Wasd wasd -> updateArrows game wasd
+      Tick _ -> tickGame game
+      Space down ->
         case game.mode of
-          Play -> changeGameMode game
-          Pause -> quitGame game
-          _ -> game
-      else game
-    _ -> game
+          Play -> if down then fireShot game else game
+          _ -> changeGameMode game
+      Escape down ->
+        if down then
+          case game.mode of
+            Play -> changeGameMode game
+            Pause -> quitGame game
+            _ -> game
+        else game
+      StartTime (time) -> { game | seed = Random.initialSeed (round time) }
+      Window (w, h) -> { game | window = (w, h)  }
+  , Effects.none
+  )
 
 
 updateArrows : Model -> { x : Int, y : Int } -> Model
