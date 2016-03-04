@@ -89,6 +89,12 @@ initialBigSaucerCount = 3
 
 maxDifficultyScore = 40000
 
+heartBeatMaxTicks = 60
+heartBeatMinTicks = 10
+
+heartBeatSoundHigh = "heart-beat-high"
+heartBeatSoundLow = "heart-beat-low"
+
 shipExplosionSound = "explosion-mid"
 shipThrustSound = "thrust"
 shipThrustSoundTicks = 6

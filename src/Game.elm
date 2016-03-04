@@ -14,6 +14,7 @@ import Debug
 import Effects exposing (Effects)
 import Explosion exposing (Explosion)
 import GameObject exposing (GameObject)
+import HeartBeat exposing (HeartBeat)
 import KeyboardHelpers
 import Random exposing(Seed)
 import RandomHelpers
@@ -69,6 +70,7 @@ type alias Model =
   , seed : Seed
   , window : (Int, Int)
   , sounds : List String
+  , heartBeat : HeartBeat
   }
 
 
@@ -91,6 +93,7 @@ defaultGame =
   , seed = Random.initialSeed 0
   , window = (0, 0)
   , sounds = []
+  , heartBeat = HeartBeat.defaultHeartBeat
   }
 
 
@@ -155,6 +158,7 @@ newLevel game =
     , tickCount = 0
     , nextLevelTickCount = 0
     , saucer = Nothing
+    , heartBeat = HeartBeat.resetHeartBeat game.heartBeat game.level
     } |> scheduleSaucer
 
 
@@ -240,6 +244,7 @@ tickPlay game =
   |> tickExplosions
   |> tickShipState
   |> tickSaucer
+  |> tickHeartBeat
   |> addRecurringSounds
   |> scheduleNewLevel
   |> checkForGameOver
@@ -598,6 +603,22 @@ hyperspace game =
       (ship, seed) = Ship.goIntoHyperspace game.ship game.seed
     in
       { game | ship = ship, seed = seed }
+  else game
+
+
+tickHeartBeat : Model -> Model
+tickHeartBeat game =
+  if game.mode == Play then
+    let
+      (heartBeat, beatSound) = HeartBeat.tick game.heartBeat
+      sounds = case beatSound of
+        Just sound -> addSound sound game.sounds
+        _ -> game.sounds
+    in
+      { game
+      | sounds = sounds
+      , heartBeat = heartBeat
+      }
   else game
 
 
