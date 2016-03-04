@@ -183,15 +183,20 @@ updateGame input game =
 
 triggerSounds : Model -> (Model, Effects Action)
 triggerSounds game =
-  let sendSound =
-    (\sound ->
-      (Signal.send sounds.address sound)
-      |> Effects.task
-      |> Effects.map (always Noop)
-    )
+  let
+    sendSound =
+      (\sound ->
+        (Signal.send sounds.address sound)
+        |> Effects.task
+        |> Effects.map (always Noop)
+      )
+    effects =
+      case game.mode of
+        Intro -> Effects.none
+        _ -> Effects.batch (List.map sendSound game.sounds)
   in
     ( { game | sounds = [] }
-    , Effects.batch (List.map sendSound game.sounds)
+    , effects
     )
 
 
