@@ -542,17 +542,20 @@ tickSaucer game =
         , sounds = sounds
         }
     Nothing ->
-      if game.tickCount == game.nextSaucerTickCount then
-        let
-          (saucer, seed) =
-            Random.generate (Saucer.newSaucer game.score game.saucerCount) game.seed
-        in
-          { game
-          | saucer = Just saucer
-          , saucerCount = game.saucerCount + 1
-          , seed = seed
-          } |> scheduleSaucer
-      else game
+      case game.mode of
+        GameOver -> game
+        _ ->
+          if game.tickCount == game.nextSaucerTickCount then
+            let
+              (saucer, seed) =
+                Random.generate (Saucer.newSaucer game.score game.saucerCount) game.seed
+            in
+              { game
+              | saucer = Just saucer
+              , saucerCount = game.saucerCount + 1
+              , seed = seed
+              } |> scheduleSaucer
+          else game
 
 
 scheduleSaucer : Model -> Model
