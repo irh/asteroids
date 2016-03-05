@@ -88,3 +88,30 @@ saucerTicksMax = 1000
 initialBigSaucerCount = 3
 
 maxDifficultyScore = 40000
+
+heartBeatMaxTicks = 60
+heartBeatMinTicks = 10
+
+heartBeatSoundHigh = "heart-beat-high"
+heartBeatSoundLow = "heart-beat-low"
+
+shipExplosionSound = "explosion-mid"
+shipThrustSound = "thrust"
+shipThrustSoundTicks = 6
+
+fireSoundShip = "fire-ship"
+fireSoundSaucer = "fire-saucer"
+
+saucerSoundBig = "saucer-low"
+saucerSoundBigTicks = 8
+saucerSoundSmall = "saucer-high"
+saucerSoundSmallTicks = 8
+
+saucerExplosionSoundBig = "explosion-low"
+saucerExplosionSoundSmall = "explosion-mid"
+
+asteroidSoundBig = "explosion-low"
+asteroidSoundMedium = "explosion-mid"
+asteroidSoundSmall = "explosion-high"
+
+extraLifeSound = "extra-life"

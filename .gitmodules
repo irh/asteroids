@@ -1,0 +1,3 @@
+[submodule "submodules/elm-signal-primer"]
+	path = submodules/elm-signal-primer
+	url = https://github.com/coreytrampe/elm-signal-primer.git

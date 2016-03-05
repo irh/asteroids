@@ -8,6 +8,7 @@ import Explosion exposing (Explosion)
 import Game
 import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
+import Html exposing (Html)
 import Point exposing (asTuple)
 import Ship exposing (Ship)
 import Shot exposing (Shot)
@@ -21,11 +22,11 @@ shipColor = rgb 255 255 255
 asteroidColor = rgb 255 255 255
 
 
-view : (Int, Int) -> Game.Model -> Element
-view (w, h) game =
+view : Signal.Address Game.Action -> Game.Model -> Html
+view _ game =
   let
-    (w', h') = (toFloat w, toFloat h)
-    factor = min w' h' - 2.0
+    (w, h) = (fst(game.window), snd(game.window))
+    factor = min (toFloat w) (toFloat h) - 2.0
     (width, height) = ((Constants.gameWidth * factor, Constants.gameHeight * factor))
     background = rect width height |> filled backgroundColor
     border = rect width height |> outlined borderLineStyle |> move (0, 0)
@@ -47,6 +48,7 @@ view (w, h) game =
       ]
     |> container w h middle
     |> color backgroundColor
+    |> Html.fromElement
 
 
 scaleTuple : (Float, Float) -> Float -> (Float, Float)
@@ -422,6 +424,7 @@ introText =
   , "LEFT/RIGHT - TURN"
   , "SPACE - FIRE"
   , "ESC - PAUSE"
+  , "M - MUTE"
   , ""
   , "PRESS SPACE TO PLAY"
   ]

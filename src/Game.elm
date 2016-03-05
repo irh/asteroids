@@ -1,32 +1,50 @@
 module Game
-  ( Update(..)
+  ( Action(..)
   , Mode(..)
   , Model
-  , intro
+  , initialGame
   , updateGame
+  , soundSignal
   ) where
 
 import Asteroid exposing (Asteroid)
 import Constants
 import Vec2 exposing (Vec2)
 import Debug
+import Effects exposing (Effects)
 import Explosion exposing (Explosion)
 import GameObject exposing (GameObject)
+import HeartBeat exposing (HeartBeat)
 import KeyboardHelpers
 import Random exposing(Seed)
 import RandomHelpers
 import Ship exposing (Ship)
 import Shot exposing (Shot)
 import Saucer exposing (Saucer)
+import Task
+import TaskTutorial exposing (getCurrentTime)
+import Time exposing (Time)
 
 
-type Update
+sounds : Signal.Mailbox String
+sounds = Signal.mailbox ""
+
+
+soundSignal : Signal String
+soundSignal = sounds.signal
+
+
+type Action
   = Arrows KeyboardHelpers.Arrows
   | Wasd KeyboardHelpers.Arrows
   | Tick Float
   | Space Bool
   | Escape Bool
-  | StartTime Float
+  | KeyM Bool
+  | StartTime Time
+  | Window (Int, Int)
+  | Noop
+
 
 type Mode
   = Intro
@@ -51,6 +69,10 @@ type alias Model =
   , nextLevelTickCount : Int
   , saucerCount : Int
   , seed : Seed
+  , window : (Int, Int)
+  , playSounds : Bool
+  , sounds : List String
+  , heartBeat : HeartBeat
   }
 
 
@@ -71,17 +93,19 @@ defaultGame =
   , nextLevelTickCount = 0
   , saucerCount = 0
   , seed = Random.initialSeed 0
+  , window = (0, 0)
+  , playSounds = True
+  , sounds = []
+  , heartBeat = HeartBeat.defaultHeartBeat
   }
 
 
-intro : Update -> Model
-intro input =
-  case input of
-    StartTime time ->
-      { defaultGame
-      | seed = Random.initialSeed (round time)
-      } |> newIntro
-    _ -> defaultGame
+initialGame : (Model, Effects Action)
+initialGame =
+  ( defaultGame
+    |> newIntro
+  , getStartTime
+  )
 
 
 newIntro : Model -> Model
@@ -99,7 +123,15 @@ newIntro game =
     , asteroids = asteroids
     , saucer = Just saucer
     , seed = seed'
+    , window = game.window
     }
+
+
+getStartTime : Effects Action
+getStartTime =
+  getCurrentTime
+  |> Task.map StartTime
+  |> Effects.task
 
 
 newGame : Model -> Model
@@ -108,6 +140,7 @@ newGame game =
   | ship = Just Ship.newShip
   , lives = Constants.startLives
   , seed = game.seed
+  , window = game.window
   }
   |> newLevel
 
@@ -128,27 +161,55 @@ newLevel game =
     , tickCount = 0
     , nextLevelTickCount = 0
     , saucer = Nothing
+    , heartBeat = HeartBeat.resetHeartBeat game.heartBeat game.level
     } |> scheduleSaucer
 
 
-updateGame : Update -> Model -> Model
+updateGame : Action -> Model -> (Model, Effects Action)
 updateGame input game =
-  case input of
-    Arrows arrows -> updateArrows game arrows
-    Wasd wasd -> updateArrows game wasd
-    Tick _ -> tickGame game
-    Space down ->
-      case game.mode of
-        Play -> if down then fireShot game else game
-        _ -> changeGameMode game
-    Escape down ->
-      if down then
+  ( case input of
+      Arrows arrows -> updateArrows game arrows
+      Wasd wasd -> updateArrows game wasd
+      Tick _ -> tickGame game
+      Space down ->
         case game.mode of
-          Play -> changeGameMode game
-          Pause -> quitGame game
-          _ -> game
-      else game
-    _ -> game
+          Play -> if down then fireShot game else game
+          _ -> changeGameMode game
+      Escape down ->
+        if down then
+          case game.mode of
+            Play -> changeGameMode game
+            Pause -> quitGame game
+            _ -> game
+        else game
+      KeyM down ->
+        if down then
+          { game | playSounds = not game.playSounds }
+        else game
+      StartTime (time) -> { game | seed = Random.initialSeed (round time) }
+      Window (w, h) -> { game | window = (w, h)  }
+      Noop -> game
+  ) |> triggerSounds
+
+
+triggerSounds : Model -> (Model, Effects Action)
+triggerSounds game =
+  let
+    sendSound =
+      (\sound ->
+        (Signal.send sounds.address sound)
+        |> Effects.task
+        |> Effects.map (always Noop)
+      )
+    effects =
+      if not game.playSounds || game.mode == Intro then
+        Effects.none
+      else
+        Effects.batch (List.map sendSound game.sounds)
+  in
+    ( { game | sounds = [] }
+    , effects
+    )
 
 
 updateArrows : Model -> { x : Int, y : Int } -> Model
@@ -191,6 +252,8 @@ tickPlay game =
   |> tickExplosions
   |> tickShipState
   |> tickSaucer
+  |> tickHeartBeat
+  |> addRecurringSounds
   |> scheduleNewLevel
   |> checkForGameOver
 
@@ -341,6 +404,7 @@ destroyShotAsteroid asteroid game =
     let
       destruction = Asteroid.destroyAsteroid asteroid game.seed
       score = Asteroid.asteroidScore asteroid
+      sound = Asteroid.asteroidSound asteroid
       game' =
         case destruction of
           Just (a, b, seed') ->
@@ -352,7 +416,7 @@ destroyShotAsteroid asteroid game =
             { game | asteroids = game.asteroids }
     in
       game'
-      |> addExplosion asteroid.position
+      |> addExplosion asteroid.position sound
       |> addScore score
   else
     { game | asteroids = asteroid :: game.asteroids }
@@ -365,14 +429,14 @@ doShipCollision _ ship game =
     | ship = Just (Ship.killShip ship)
     , lives = game.lives - 1
     }
-    |> addExplosion ship.position
+    |> addExplosion ship.position Constants.shipExplosionSound
   else game
 
 
 doSaucerCollision : Bool -> GameObject a -> Saucer -> Model -> Model
 doSaucerCollision score _ saucer game =
   { game | saucer = Nothing }
-  |> addExplosion saucer.position
+  |> addExplosion saucer.position (Saucer.explosionSound saucer)
   |> addScore (if score then (Saucer.saucerScore saucer) else 0)
   |> scheduleSaucer
 
@@ -426,6 +490,14 @@ saucerVsAsteroids game =
   gameObjectVsAsteroids game.saucer (doSaucerCollision False) game
 
 
+addSound : String -> List String -> List String
+addSound sound sounds =
+  if List.member sound sounds then
+    sounds
+  else
+    sound :: sounds
+
+
 fireShot : Model -> Model
 fireShot game =
   case Ship.fireShot game.ship of
@@ -433,16 +505,18 @@ fireShot game =
     Just shot ->
       { game
       | shots = shot :: game.shots
+      , sounds = addSound Constants.fireSoundShip game.sounds
       }
 
 
-addExplosion : Vec2 -> Model -> Model
-addExplosion position game =
+addExplosion : Vec2 -> String -> Model -> Model
+addExplosion position sound game =
   let
     (explosion, seed) = Explosion.newExplosion position game.seed
   in
     { game
     | explosions = explosion :: game.explosions
+    , sounds = addSound sound game.sounds
     , seed = seed
     }
 
@@ -472,27 +546,34 @@ tickSaucer game =
       let
         (saucer', seed) = Saucer.tickSaucer saucer game.seed
         (shot, seed') = Saucer.maybeFireShot saucer' game.ship seed
-        shots = case shot of
-          Just shot' -> shot' :: game.shots
-          Nothing -> game.shots
+        (shots, sounds) =
+          case shot of
+            Just shot' ->
+              ( shot' :: game.shots
+              , addSound Constants.fireSoundSaucer game.sounds)
+            Nothing -> (game.shots, game.sounds)
       in
         { game
         | saucer = Just saucer'
         , seed = seed'
         , shots = shots
+        , sounds = sounds
         }
     Nothing ->
-      if game.tickCount == game.nextSaucerTickCount then
-        let
-          (saucer, seed) =
-            Random.generate (Saucer.newSaucer game.score game.saucerCount) game.seed
-        in
-          { game
-          | saucer = Just saucer
-          , saucerCount = game.saucerCount + 1
-          , seed = seed
-          } |> scheduleSaucer
-      else game
+      case game.mode of
+        GameOver -> game
+        _ ->
+          if game.tickCount == game.nextSaucerTickCount then
+            let
+              (saucer, seed) =
+                Random.generate (Saucer.newSaucer game.score game.saucerCount) game.seed
+            in
+              { game
+              | saucer = Just saucer
+              , saucerCount = game.saucerCount + 1
+              , seed = seed
+              } |> scheduleSaucer
+          else game
 
 
 scheduleSaucer : Model -> Model
@@ -516,10 +597,16 @@ addScore score game =
       if (scoreRank game.score) < (scoreRank score')
         then game.lives + 1
         else game.lives
+    sounds =
+      if lives > game.lives then
+        addSound Constants.extraLifeSound game.sounds
+      else
+        game.sounds
   in
     { game
     | score = score'
     , lives = lives
+    , sounds = sounds
     }
 
 
@@ -531,3 +618,55 @@ hyperspace game =
     in
       { game | ship = ship, seed = seed }
   else game
+
+
+tickHeartBeat : Model -> Model
+tickHeartBeat game =
+  if game.mode == Play then
+    let
+      (heartBeat, beatSound) = HeartBeat.tick game.heartBeat
+      sounds = case beatSound of
+        Just sound -> addSound sound game.sounds
+        _ -> game.sounds
+    in
+      { game
+      | sounds = sounds
+      , heartBeat = heartBeat
+      }
+  else game
+
+
+addRecurringSounds : Model -> Model
+addRecurringSounds game =
+  game
+  |> addThrustSound
+  |> addSaucerSound
+
+
+addThrustSound : Model -> Model
+addThrustSound game =
+  let
+    sounds =
+      case game.ship of
+        Just ship ->
+          if ship.thrust && ship.tickCount % Constants.shipThrustSoundTicks == 0 then
+            addSound Constants.shipThrustSound game.sounds
+          else
+            game.sounds
+        _ -> game.sounds
+  in
+    { game | sounds = sounds }
+
+
+addSaucerSound : Model -> Model
+addSaucerSound game =
+  let
+    sounds =
+      let
+        saucerSound = Saucer.saucerSound game.saucer
+      in
+        case saucerSound of
+          Just sound -> addSound sound game.sounds
+          _ -> game.sounds
+  in
+    { game | sounds = sounds }

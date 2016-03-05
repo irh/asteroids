@@ -7,6 +7,8 @@ module Saucer
   , maybeFireShot
   , saucerScore
   , saucerSizeForView
+  , explosionSound
+  , saucerSound
   ) where
 
 import Constants
@@ -228,3 +230,28 @@ saucerScore saucer =
 saucerSizeForView : Saucer -> Float
 saucerSizeForView saucer =
   saucer.size / Constants.saucerSizeCollisionRatio
+
+
+explosionSound : Saucer -> String
+explosionSound saucer =
+  case saucer.saucerType of
+    Big -> Constants.saucerExplosionSoundBig
+    Small -> Constants.saucerExplosionSoundSmall
+
+
+saucerSound : Maybe Saucer -> Maybe String
+saucerSound maybeSaucer =
+  case maybeSaucer of
+    Just saucer ->
+      case saucer.saucerType of
+        Big ->
+          if (saucer.tickCount % Constants.saucerSoundBigTicks == 0) then
+            Just Constants.saucerSoundBig
+          else
+            Nothing
+        Small ->
+          if (saucer.tickCount % Constants.saucerSoundSmallTicks == 0) then
+            Just Constants.saucerSoundSmall
+          else
+            Nothing
+    _ -> Nothing
