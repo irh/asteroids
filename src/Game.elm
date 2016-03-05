@@ -40,6 +40,7 @@ type Action
   | Tick Float
   | Space Bool
   | Escape Bool
+  | KeyM Bool
   | StartTime Time
   | Window (Int, Int)
   | Noop
@@ -69,6 +70,7 @@ type alias Model =
   , saucerCount : Int
   , seed : Seed
   , window : (Int, Int)
+  , playSounds : Bool
   , sounds : List String
   , heartBeat : HeartBeat
   }
@@ -92,6 +94,7 @@ defaultGame =
   , saucerCount = 0
   , seed = Random.initialSeed 0
   , window = (0, 0)
+  , playSounds = True
   , sounds = []
   , heartBeat = HeartBeat.defaultHeartBeat
   }
@@ -179,6 +182,10 @@ updateGame input game =
             Pause -> quitGame game
             _ -> game
         else game
+      KeyM down ->
+        if down then
+          { game | playSounds = not game.playSounds }
+        else game
       StartTime (time) -> { game | seed = Random.initialSeed (round time) }
       Window (w, h) -> { game | window = (w, h)  }
       Noop -> game
@@ -195,9 +202,10 @@ triggerSounds game =
         |> Effects.map (always Noop)
       )
     effects =
-      case game.mode of
-        Intro -> Effects.none
-        _ -> Effects.batch (List.map sendSound game.sounds)
+      if not game.playSounds || game.mode == Intro then
+        Effects.none
+      else
+        Effects.batch (List.map sendSound game.sounds)
   in
     ( { game | sounds = [] }
     , effects

@@ -19,6 +19,7 @@ inputSignals =
   , Signal.map Game.Wasd Keyboard.wasd
   , Signal.map Game.Space Keyboard.space
   , Signal.map Game.Escape (Keyboard.isDown 27)
+  , Signal.map Game.KeyM (Keyboard.isDown 77)
   , Signal.map Game.Window (Primer.prime Window.dimensions)
   ]
 

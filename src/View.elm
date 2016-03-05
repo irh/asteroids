@@ -424,6 +424,7 @@ introText =
   , "LEFT/RIGHT - TURN"
   , "SPACE - FIRE"
   , "ESC - PAUSE"
+  , "M - MUTE"
   , ""
   , "PRESS SPACE TO PLAY"
   ]
