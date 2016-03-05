@@ -6,6 +6,7 @@ var rename = require('gulp-rename');
 var elm = require('gulp-elm');
 var concat = require('gulp-concat-util');
 var audiosprite = require('gulp-audiosprite');
+var ghPages = require('gulp-gh-pages');
 
 gulp.task('elm-init', elm.init);
 
@@ -68,5 +69,9 @@ gulp.task('watch', ['build'], function() {
   gulp.watch('src/*.js', ['build']);
 });
 
-gulp.task('default', ['build']);
+gulp.task('deploy', function() {
+  gulp.src('build/dist/**/*')
+    .pipe(ghPages());
+});
 
+gulp.task('default', ['build']);
