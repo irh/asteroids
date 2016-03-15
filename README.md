@@ -7,5 +7,5 @@ An Asteroids clone for the browser written in the [Elm language][1].
 
 [![Asteroids](asteroids.png)][2]
 
-[1]: https://www.elm-lang.org
+[1]: http://www.elm-lang.org
 [2]: https://irh.github.io/asteroids
